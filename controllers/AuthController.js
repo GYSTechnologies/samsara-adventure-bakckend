@@ -164,14 +164,14 @@ const changePassword = async (req, res) => {
         return res.status(404).json({ message: "User not found!" });
     }
 
-    const isMatch = await brcypt.compare(oldPassword, existUser.password);
+    const isMatch = await bcrypt.compare(oldPassword, existUser.password);
     if (!isMatch) {
         return res.status(500).json({ message: "Old password does not match!" });
     }
 
     try {
-        const salt = await brcypt.genSalt(10);
-        const hashedPassword = await brcypt.hash(newPassword, salt);
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(newPassword, salt);
 
         const updateUser = await UserModel.findByIdAndUpdate(
             existUser._id, // Use the ID of the existing user found by email
