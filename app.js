@@ -1,6 +1,5 @@
 const express = require('express');
 const app = express();
-const path = require('path');
 const multer = require('multer');
 const mongoose = require('mongoose');
 require('dotenv').config();
@@ -15,7 +14,10 @@ mongoose.connect(process.env.MONGODB_URI)
 app.use(express.json())
 
 const authRoute = require('./routes/AuthRoute')
+const bookRoute = require('./routes/BookingRoute')
+
 app.use('/',authRoute);
+app.use('/',bookRoute);
 
 app.use('/',(req,res)=>{
     res.send("Samsara Backend")

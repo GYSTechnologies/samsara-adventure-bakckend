@@ -21,6 +21,10 @@ const UserModel = mongoose.Schema({
     profileUrl: {
         type: String,
         required: true
+    },
+    phoneNumber: {
+        type: Number,
+        required: true
     }
 });
 
