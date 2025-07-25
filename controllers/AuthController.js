@@ -1,9 +1,7 @@
 const bcrypt = require('bcrypt');
 const UserModel = require('../models/UserModel');
-const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
-const crypto = require('crypto');
-
+const crypto = require('crypto')
 
 const transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -17,24 +15,8 @@ let otpStore = {};
 
 const { JWT_SECRET } = process.env; // Make sure JWT_SECRET is set in your environment variables
 
-// Middleware to check for token
-const authenticateToken = (req, res, next) => {
-    const token = req.headers.authorization?.split(" ")[1]; // Bearer <token>
-    if (!token) {
-        return res.status(401).json({ message: "Authorization token is required" });
-    }
-
-    jwt.verify(token, JWT_SECRET, (err, user) => {
-        if (err) {
-            return res.status(403).json({ message: "Invalid or expired token" });
-        }
-        req.user = user; // Attach decoded user to the request object
-        next(); // Proceed to the next middleware or route handler
-    });
-};
-
 const signup = async (req, res, next) => {
-    const { name, email, password, userType, profileUrl } = req.body
+    const { name, email, password, userType, profileUrl, phoneNumber } = req.body
     let existUser;
     try {
         existUser = await UserModel.findOne({ email });
@@ -43,6 +25,15 @@ const signup = async (req, res, next) => {
     }
     if (existUser) {
         return res.status(400).json({ message: "This email already exist!" });
+    }
+    let phoneAvailable
+    try {
+        phoneAvailable = await UserModel.findOne({ phoneNumber });
+    } catch (e) {
+        return console.log(e);
+    }
+    if (phoneAvailable) {
+        return res.status(400).json({ message: "This phone number already in use!" });
     }
 
     const salt = await bcrypt.genSalt(10);
@@ -67,7 +58,7 @@ const signup = async (req, res, next) => {
         // Store OTP and user data temporarily (in memory)
         otpStore[email] = {
             otp,
-            user: { name: name, email: email, password: hashedPassword, userType: userType, profileUrl: profileUrl },
+            user: { name: name, email: email, password: hashedPassword, userType: userType, profileUrl: profileUrl, phoneNumber: phoneNumber },
             createdAt: Date.now() // Timestamp for OTP expiration
         };
 
@@ -113,7 +104,8 @@ const verifyEmail = async (req, res) => {
             name: newUser.name,
             email: newUser.email,
             userType: newUser.userType,
-            profileUrl: newUser.profileUrl
+            profileUrl: newUser.profileUrl,
+            phoneNumber: newUser.phoneNumber
         });
     } catch (error) {
         console.error("Error during email verification:", error);
@@ -141,7 +133,8 @@ const login = async (req, res, next) => {
         name: existUser.name,
         email: existUser.email,
         userType: existUser.userType,
-        profileUrl: existUser.profileUrl
+        profileUrl: existUser.profileUrl,
+        phoneNumber: existUser.phoneNumber
     });
 }
 
@@ -286,4 +279,4 @@ const resetPassword = async (req, res) => {
     }
 }
 
-module.exports = { signup, verifyEmail, authenticateToken, login, changePassword, sendOtpForResetPassword, verifyEmailForResetPassword, resetPassword };
+module.exports = { signup, verifyEmail, login, changePassword, sendOtpForResetPassword, verifyEmailForResetPassword, resetPassword };

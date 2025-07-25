@@ -1,7 +1,7 @@
 const express = require('express')
 const router = express.Router()
 
-const { signup, verifyEmail, authenticateToken, login, changePassword, sendOtpForResetPassword, verifyEmailForResetPassword, resetPassword } = require('../controllers/AuthController')
+const { signup, verifyEmail, login, changePassword, sendOtpForResetPassword, verifyEmailForResetPassword, resetPassword } = require('../controllers/AuthController')
 
 router.post('/signupUser', signup);
 router.post("/verifyEmail", verifyEmail);
