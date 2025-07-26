@@ -6,9 +6,9 @@ const { signup, verifyEmail, login, changePassword, sendOtpForResetPassword, ver
 router.post('/signupUser', signup);
 router.post("/verifyEmail", verifyEmail);
 router.post('/loginUser', login);
-router.post('/changePassword', changePassword);
+router.put('/changePassword', changePassword);
 router.post('/sendOtpForResetPassword/:email', sendOtpForResetPassword);
 router.post('/verifyEmailForResetPassword', verifyEmailForResetPassword);
-router.post('/resetPassword', resetPassword);
+router.put('/resetPassword', resetPassword);
 
 module.exports = router;

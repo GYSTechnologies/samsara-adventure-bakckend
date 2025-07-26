@@ -15,9 +15,11 @@ app.use(express.json())
 
 const authRoute = require('./routes/AuthRoute')
 const bookRoute = require('./routes/BookingRoute')
+const tripRoute = require('./routes/TripRoute')
 
 app.use('/',authRoute);
 app.use('/',bookRoute);
+app.use('/',tripRoute);
 
 app.use('/',(req,res)=>{
     res.send("Samsara Backend")

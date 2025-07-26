@@ -2,6 +2,10 @@ const mongoose = require('mongoose');
 const TravelersSchema = require('../models/TravelersSchema')
 
 const PackageTripBooking = new mongoose.Schema({
+    bookId: {
+        type: String,
+        unique: true
+    },
     userName: {
         type: String,
         required: true,
@@ -25,7 +29,6 @@ const PackageTripBooking = new mongoose.Schema({
     tripId: {
         type: String,
         required: true,
-        unique: true,
         trim: true
     },
     destination: {
@@ -80,5 +83,15 @@ const PackageTripBooking = new mongoose.Schema({
 }, {
     timestamps: true
 });
+
+PackageTripBooking.pre('save', async function (next) {
+    if (!this.bookId) {
+        const randomPart = Math.random().toString(36).substring(2, 8).toUpperCase(); // 6-letter random
+        const timestamp = Date.now().toString().slice(-6); // last 6 digits of timestamp
+        this.bookId = `BOOK-${timestamp}-${randomPart}`; // e.g., BOOK-982371-AZ9FHD
+    }
+    next();
+});
+
 
 module.exports = mongoose.model('package_trip_booking', PackageTripBooking);
