@@ -26,15 +26,6 @@ const signup = async (req, res, next) => {
     if (existUser) {
         return res.status(400).json({ message: "This email already exist!" });
     }
-    let phoneAvailable
-    try {
-        phoneAvailable = await UserModel.findOne({ phoneNumber });
-    } catch (e) {
-        return console.log(e);
-    }
-    if (phoneAvailable) {
-        return res.status(400).json({ message: "This phone number already in use!" });
-    }
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
@@ -140,18 +131,16 @@ const login = async (req, res, next) => {
 
 const changePassword = async (req, res) => {
     const { email, oldPassword, newPassword } = req.body;
+
     let existUser;
     try {
-        existUser = await UserModel.findOne({ email });
+        existUser = await UserModel.findOne({ email })
     } catch (err) {
-        console.error("Error finding user:", err);
-        return res.status(500).json({ message: "Error finding user!" });
+        return console.log(err);
     }
-
     if (!existUser) {
         return res.status(404).json({ message: "User not found!" });
     }
-
     const isMatch = await bcrypt.compare(oldPassword, existUser.password);
     if (!isMatch) {
         return res.status(500).json({ message: "Old password does not match!" });
@@ -189,7 +178,7 @@ const sendOtpForResetPassword = async (req, res) => {
         transporter.sendMail({
             from: process.env.EMAIL,
             to: email,
-            subject: 'Verify Your Email',
+            subject: 'OTP Reset Password',
             text: `Your OTP code is ${otp}. It is valid for 5 minutes.`
         }, (err, info) => {
             if (err) {
@@ -279,4 +268,31 @@ const resetPassword = async (req, res) => {
     }
 }
 
-module.exports = { signup, verifyEmail, login, changePassword, sendOtpForResetPassword, verifyEmailForResetPassword, resetPassword };
+const updateProfile = async (req, res) => {
+    const { email, name } = req.body;
+    try {
+        const updateData = {};
+        if (name) updateData.name = name;
+        if (req.file && req.file.path) {
+            updateData.profileUrl = req.file.path;
+        }
+
+        const updatedUser = await UserModel.findOneAndUpdate(
+            { email },
+            updateData,
+            { new: true }
+        ).select('-_id -__v -password');
+
+        if (!updatedUser) {
+            return res.status(404).json({ message: "User not found!" });
+        }
+
+        return res.status(200).json({ updatedUser });
+
+    } catch (err) {
+        console.error("Error updating user profile:", err);
+        return res.status(500).json({ message: "Error updating user profile!" });
+    }
+};
+
+module.exports = { signup, verifyEmail, login, changePassword, sendOtpForResetPassword, verifyEmailForResetPassword, resetPassword,updateProfile };

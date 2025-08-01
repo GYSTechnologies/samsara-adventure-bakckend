@@ -1,123 +1,13 @@
-const PackageTripBookingModel = require('../models/PackageTripBookingModel');
-const PlanOwnTripBoookingModel = require('../models/PlanOwnTripBookingModel');
+const BookingSchema = require('../models/BookingSchema')
 
-const createPackageBooking = async (req, res) => {
+const createBooking = async (req, res) => {
     try {
-        const {
-            userName,
-            email,
-            phoneNo,
-            currentLocation,
-            tripId,
-            destination,
-            duration,
-            startDate,
-            endDate,
-            imageUrl,
-            paymentStatus,
-            subTotal,
-            taxation,
-            insurance,
-            grandTotal,
-            travelers
-        } = req.body;
-
-        // Create and save booking
-        const newBooking = new PackageTripBookingModel({
-            userName,
-            email,
-            phoneNo,
-            currentLocation,
-            tripId,
-            destination,
-            duration,
-            startDate,
-            endDate,
-            imageUrl,
-            paymentStatus,
-            subTotal,
-            taxation,
-            insurance,
-            grandTotal,
-            travelers
-        });
-
-        const savedBooking = await newBooking.save();
-
-        return res.status(201).json({
-            message: 'Package trip booked successfully.'
-        });
-
+        const newUpdate = new BookingSchema(req.body);
+        const savedUpdate = await newUpdate.save();
+        res.status(201).json(savedUpdate);
     } catch (error) {
-        console.error('Error while booking:', error);
-        return res.status(500).json({
-            message: 'Internal Server Error',
-            error: error.message
-        });
+        res.status(400).json({ error: "Failed to create trip update", message: error.message });
     }
 };
 
-const createPlanOwnTripBooking = async (req, res) => {
-    try {
-        const {
-            userName,
-            email,
-            phoneNo,
-            currentLocation,
-            tripId,
-            destination,
-            duration,
-            startDate,
-            endDate,
-            imageUrl,
-            paymentStatus,
-            subTotal,
-            taxation,
-            insurance,
-            grandTotal,
-            preferredDate,
-            preferredTime,
-            travelers,
-            services
-        } = req.body;
-
-
-        const newBooking = new PlanOwnTripBoookingModel({
-            userName,
-            email,
-            phoneNo,
-            currentLocation,
-            tripId,
-            destination,
-            duration,
-            startDate,
-            endDate,
-            imageUrl,
-            paymentStatus,
-            subTotal,
-            taxation,
-            insurance,
-            grandTotal,
-            preferredDate,
-            preferredTime,
-            travelers,
-            services
-        });
-
-        const savedBooking = await newBooking.save();
-
-        return res.status(201).json({
-            message: 'Plan Own Trip appointment booked successfully!'
-        });
-
-    } catch (error) {
-        console.error('Error while booking:', error);
-        return res.status(500).json({
-            message: 'Internal Server Error',
-            error: error.message
-        });
-    }
-};
-
-
-module.exports = { createPackageBooking, createPlanOwnTripBooking };
+module.exports = { createBooking };

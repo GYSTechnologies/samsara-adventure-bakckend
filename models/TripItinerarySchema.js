@@ -1,48 +1,105 @@
 const mongoose = require('mongoose');
 
-const TripItinerarySchema = new mongoose.Schema({
-    tripId: { type: String, unique: true },
-    title: { type: String, required: true },
-    location: { type: String, required: true },
-    duration: { type: String, required: true },
-    tripType: { type: String, enum: ['PACKAGE', 'CUSTOM'], required: true },
-    tripCategory: { type: String },
-    images: [{ type: String }],
-    rating: { type: Number, min: 0, max: 5 },
-    difficulty: { type: String, enum: ['Easy', 'Moderate', 'Hard'] },
-    transportation: { type: String },
-    hotelCategory: { type: String },
-    activities: [{ type: String }],
-    showMoreActivities: { type: Boolean, default: false },
-    inclusions: [{ type: String }],
-    exclusions: [{ type: String }],
-    pricing: {
-        originalPrice: { type: Number, required: true },
-        discountedPrice: { type: Number, required: true },
-        tax: { type: Number, required: true },
-        totalPrice: { type: Number, required: true },
-        currency: { type: String, default: 'INR' }
+const itineraryPointSchema = new mongoose.Schema({
+    subpoints: [String]
+  }, { _id: false });
+  
+  const itinerarySchema = new mongoose.Schema({
+    dayNumber: {
+      type: Number,
+      required: true
     },
-    itinerary: [
-        {
-            day: { type: Number, required: true },
-            title: { type: String, required: true },
-            points: [
-                {
-                    text: { type: String },
-                    subPoints: [{ type: String }]
-                }
-            ]
-        }
-    ],
-    customPlanOptions: {
-        suggestedPlaces: [{ type: String }],
-        minDays: { type: Number },
-        maxDays: { type: Number },
-        guideAvailable: { type: Boolean },
-        note: { type: String }
+    image: {
+      type: String,
+      required: true
+    },
+    title: {
+      type: String,
+      required: true
+    },
+    description: String,
+    points: [
+      {
+        type: mongoose.Schema.Types.Mixed  // Can be String or { subpoints: [...] }
+      }
+    ]
+  }, { _id: false });
+  
+  const paymentSchema = new mongoose.Schema({
+    subTotal: {
+      type: Number,
+      required: true
+    },
+    taxation: {
+      type: Number,
+      required: true
+    },
+    insurance: {
+      type: Number,
+      required: true
+    },
+    activities: {
+      type: Number,
+      required: true
+    },
+    grandTotal: {
+      type: Number,
+      required: true
+    },
+    actualPrice: {
+      type: Number,
+      required: true
     }
-}, { timestamps: true });
+  }, { _id: false });
+  
+  const TripItinerarySchema = new mongoose.Schema({
+    tripId: {
+      type: String,
+      unique: true
+    },
+    tripType: {
+      type: String,
+      required: true
+    },
+    title: {
+      type: String,
+      required: true
+    },
+    state: {
+      type: String,
+      required: true
+    },
+    category: {
+      type: String,
+      required: true
+    },
+    description: String,
+    images: [String],
+    overview: [String],
+    inclusions: [String],
+    exclusions: [String],
+    activities: [String],
+    payment: {
+      type: paymentSchema,
+      required: true
+    },
+    startDate: {
+      type: String,
+      required: true
+    },
+    endDate: {
+      type: String,
+      required: true
+    },
+    duration: {
+      type: String,
+      required: true
+    },
+    itinerary: [itinerarySchema]
+  }, {
+    timestamps: true
+  });
+  
 
 // Ensure unique tripId is set before saving
 TripItinerarySchema.pre('validate', function (next) {
