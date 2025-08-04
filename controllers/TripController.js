@@ -105,81 +105,11 @@ const getAllTrips = async (req, res) => {
   }
 };
 
-// const getTripsByFilter = async (req, res) => {
-//   try {
-//     const {
-//       state,
-//       category,
-//       type,
-//       name,
-//       sortBy,
-//       startDate,
-//       endDate,
-//       page = 1,
-//       limit = 20,
-//       email
-//     } = req.query;
-
-//     const filter = {};
-
-//     // Apply filters
-//     if (state) filter.state = state;
-//     if (category) filter.category = category;
-//     if (type) filter.tripType = type;
-//     if (name) filter.title = { $regex: name, $options: 'i' };
-//     if (startDate || endDate) {
-//       filter.startDate = {};
-//       if (startDate) filter.startDate.$gte = new Date(startDate);
-//       if (endDate) filter.startDate.$lte = new Date(endDate);
-//     }
-
-//     // Sort logic
-//     let sort = {};
-//     if (sortBy === 'recent') sort.createdAt = -1;
-//     else if (sortBy === 'asc') sort.title = 1;
-//     else if (sortBy === 'desc') sort.title = -1;
-
-//     // Pagination
-//     const skip = (page - 1) * limit;
-
-//     // Get trips
-//     const trips = await TripItineraryModel.find(filter)
-//       .sort(sort)
-//       .skip(skip)
-//       .limit(Number(limit))
-//       .select('-_id -__v');
-
-//     if (!trips || trips.length === 0) {
-//       return res.status(404).json({ message: "No trips found!" });
-//     }
-
-//     // If userEmail provided, get user's favorite tripIds
-//     let favoriteTripIds = [];
-//     if (email) {
-//       const favorites = await FavoriteTripModel.find({ email }).select('tripId -_id');
-//       favoriteTripIds = favorites.map(fav => fav.tripId);
-//     }
-
-//     // Add isFavorite to each trip
-//     const tripsWithFavorite = trips.map(trip => {
-//       const tripObj = trip.toObject(); // convert mongoose doc to plain object
-//       tripObj.isFavorite = favoriteTripIds.includes(trip.tripId);
-//       return tripObj;
-//     });
-
-//     return res.status(200).json({ trips: tripsWithFavorite });
-
-//   } catch (error) {
-//     console.error("Error while retrieving trips.", error);
-//     return res.status(500).json({ message: "Error while retrieving trips." });
-//   }
-// };
-
 const getTripsByFilter = async (req, res) => {
   try {
     const {
       state,
-      category,
+      category, // BEACH,MOUNTAIN,GREENLY,DESERT
       type,
       name,
       sortBy,
@@ -198,7 +128,14 @@ const getTripsByFilter = async (req, res) => {
     if (state) filter.state = state;
     if (category) filter.category = category;
     if (type) filter.tripType = type;
-    if (name) filter.title = { $regex: name, $options: 'i' };
+
+    if (name) {
+      filter.$or = [
+        { title: { $regex: name, $options: 'i' } },
+        { state: { $regex: name, $options: 'i' } },
+        { category: { $regex: name, $options: 'i' } }
+      ];
+    }
 
     // Date filter
     if (startDate || endDate) {
@@ -280,5 +217,354 @@ const getTripsByFilter = async (req, res) => {
   }
 };
 
+const getTripDetailsById = async (req, res) => {
+  try {
+    const { tripId, email } = req.query; // optional
 
-module.exports = { createTrip, getAllTrips, getTripsByFilter };
+    // Fetch trip by tripId
+    const trip = await TripItineraryModel.findOne({ tripId }).select('-_id -__v');
+
+    if (!trip) {
+      return res.status(404).json({ success: false, message: "Trip not found" });
+    }
+
+    // Check if trip is favorite for given email
+    let isFavorite = false;
+    if (email) {
+      const fav = await FavoriteTripModel.findOne({ email, tripId });
+      isFavorite = !!fav;
+    }
+
+    const tripDetails = {
+      ...trip.toObject(),
+      isFavorite
+    };
+
+    res.status(200).json({ trip: tripDetails });
+
+  } catch (error) {
+    console.error("Error fetching trip details:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+
+const getHomeTripDetails = async (req, res) => {
+  try {
+    const { name, category, email, page = 1, limit = 10 } = req.query;
+
+    const filter = {};
+
+    // Apply filters
+    if (category) {
+      filter.category = category;
+    }
+
+    if (name) {
+      filter.$or = [
+        { title: { $regex: name, $options: 'i' } },
+        { state: { $regex: name, $options: 'i' } }
+      ];
+    }
+
+    const skip = (page - 1) * limit;
+
+    // Fetch required fields only
+    const trips = await TripItineraryModel.find(filter)
+      .select('tripId tripType state category payment.actualPrice payment.subTotal images')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(Number(limit));
+
+    // Step 1: Get user's favorite trip IDs
+    let favoriteTripIdsSet = new Set();
+    if (email) {
+      const favorites = await FavoriteTripModel.find({ email }).select('tripId -_id');
+      favoriteTripIdsSet = new Set(favorites.map(f => f.tripId));
+    }
+
+    // Step 2: Format response with isFavorite flag and first image
+    const formattedTrips = trips.map(trip => {
+      const tripObj = trip.toObject();
+      return {
+        tripId: tripObj.tripId,
+        tripType: tripObj.tripType,
+        state: tripObj.state,
+        category: tripObj.category,
+        actualPrice: tripObj.payment.actualPrice,
+        subTotal: tripObj.payment.subTotal,
+        image: tripObj.images?.[0] || null,
+        isFavorite: favoriteTripIdsSet.has(tripObj.tripId)
+      };
+    });
+
+    res.status(200).json({ trips: formattedTrips });
+  } catch (error) {
+    console.error('Error fetching minimal trip details:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+};
+
+const getStateTrips = async (req, res) => {
+  try {
+    const { state, sortBy = 'recent', page = 1, limit = 20 } = req.query;
+
+    const filter = {
+      tripType: 'PACKAGE'
+    };
+
+    if (state && state !== 'null' && state !== '') {
+      filter.state = state;
+    }
+
+    // Determine sort field
+    let sort = {};
+    switch (sortBy) {
+      case 'price_asc':
+        sort['payment.subTotal'] = 1;
+        break;
+      case 'price_desc':
+        sort['payment.subTotal'] = -1;
+        break;
+      case 'title_asc':
+        sort['title'] = 1;
+        break;
+      case 'title_desc':
+        sort['title'] = -1;
+        break;
+      case 'recent':
+      default:
+        sort['createdAt'] = -1;
+    }
+
+    const skip = (page - 1) * limit;
+
+    const trips = await TripItineraryModel.find(filter)
+      .select('state payment.actualPrice payment.subTotal images startDate duration')
+      .sort(sort)
+      .skip(skip)
+      .limit(Number(limit));
+
+    const formattedTrips = trips.map(trip => {
+      const t = trip.toObject();
+      return {
+        state: t.state,
+        actualPrice: t.payment.actualPrice,
+        subTotal: t.payment.subTotal,
+        image: t.images?.[0] || null,
+        startDate: t.startDate,
+        duration: t.duration
+      };
+    });
+
+    res.status(200).json({ trips: formattedTrips });
+  } catch (error) {
+    console.error('Error fetching trip summaries by state:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+};
+
+const getTripsByState = async (req, res) => {
+  try {
+    const {
+      state,
+      category,
+      startDate,
+      endDate,
+      minPrice,
+      maxPrice,
+      email,
+      page = 1,
+      limit = 10,
+      sortBy
+    } = req.query;
+
+    const filter = {
+      tripType: 'PACKAGE' // Only PACKAGE trips
+    };
+
+    if (state) filter.state = state;
+    if (category) filter.category = category;
+
+    // Date filters
+    if (startDate || endDate) {
+      filter.startDate = {};
+      if (startDate) filter.startDate.$gte = new Date(startDate);
+      if (endDate) filter.startDate.$lte = new Date(endDate);
+    }
+
+    // Price filters
+    if (minPrice || maxPrice) {
+      filter['payment.actualPrice'] = {};
+      if (minPrice) filter['payment.actualPrice'].$gte = Number(minPrice);
+      if (maxPrice) filter['payment.actualPrice'].$lte = Number(maxPrice);
+    }
+
+    const skip = (page - 1) * limit;
+
+    // Sorting
+    let sortOption = { createdAt: -1 }; // Default: recent
+    if (sortBy === 'price_asc') sortOption = { 'payment.actualPrice': 1 };
+    else if (sortBy === 'price_desc') sortOption = { 'payment.actualPrice': -1 };
+    else if (sortBy === 'duration') sortOption = { duration: 1 };
+
+    // Get favorite trip IDs
+    let favoriteTripIdsSet = new Set();
+    if (email) {
+      const favorites = await FavoriteTripModel.find({ email }).select('tripId -_id');
+      favoriteTripIdsSet = new Set(favorites.map(f => f.tripId));
+    }
+
+    // Query trips
+    const trips = await TripItineraryModel.find(filter)
+      .select('tripId title images activities duration payment.actualPrice payment.subTotal')
+      .sort(sortOption)
+      .skip(skip)
+      .limit(Number(limit));
+
+    const formattedTrips = trips.map(trip => {
+      const tripObj = trip.toObject();
+      return {
+        tripId: tripObj.tripId,
+        title: tripObj.title,
+        image: tripObj.images?.[0] || null,
+        actualPrice: tripObj.payment?.actualPrice || 0,
+        subTotal: tripObj.payment?.subTotal || 0,
+        duration: tripObj.duration,
+        activities: tripObj.activities || [],
+        isFavorite: favoriteTripIdsSet.has(tripObj.tripId)
+      };
+    });
+
+    res.status(200).json({ trips: formattedTrips });
+  } catch (error) {
+    console.error('Error fetching minimal trip details:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+};
+
+const getPlanYourOwnTrips = async (req, res) => {
+  try {
+    const { startDate, endDate, email, page = 1, limit = 10 } = req.query;
+
+    const filter = {
+      tripType: 'CUSTOMIZED'
+    };
+
+    if (startDate) {
+      filter.startDate = { $gte: new Date(startDate) };
+    }
+
+    if (endDate) {
+      filter.startDate = { ...filter.startDate, $lte: new Date(endDate) };
+    }
+
+    const skip = (page - 1) * limit;
+
+    // Step 1: Get matching trips
+    const trips = await TripItineraryModel.find(filter)
+      .select('tripId title duration startDate images itinerary activities')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(Number(limit));
+
+    // Step 2: Get user's favorite trip IDs
+    let favoriteTripIdsSet = new Set();
+    if (email) {
+      const favorites = await FavoriteTripModel.find({ email }).select('tripId -_id');
+      favoriteTripIdsSet = new Set(favorites.map(fav => fav.tripId));
+    }
+
+    // Step 3: Format result
+    const formatted = trips.map(trip => {
+      const tripObj = trip.toObject();
+      const itineraryTitles = Array.isArray(tripObj.itinerary)
+        ? tripObj.itinerary.map(item => item.title || item.name || '')
+        : [];
+
+      return {
+        tripId: tripObj.tripId,
+        title: tripObj.title,
+        duration: tripObj.duration,
+        image: tripObj.images?.[0] || null,
+        itineraryTitles: itineraryTitles.filter(Boolean),
+        activities: tripObj.activities || [],
+        isFavorite: favoriteTripIdsSet.has(tripObj.tripId)
+      };
+    });
+
+    res.status(200).json({ trips: formatted });
+  } catch (error) {
+    console.error('Error in getTripSummaryWithDateFilter:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+};
+
+
+const getTop3Images = (trip) => {
+  const finalImages = [];
+
+  // Add from trip images
+  if (Array.isArray(trip.images)) {
+    finalImages.push(...trip.images.slice(0, 3));
+  }
+
+  // Add from itinerary images if needed
+  if (finalImages.length < 3 && Array.isArray(trip.itinerary)) {
+    for (let step of trip.itinerary) {
+      if (step.image && finalImages.length < 3) {
+        finalImages.push(step.image);
+      }
+    }
+  }
+
+  return finalImages.slice(0, 3);
+};
+
+const getUpcommingTrips = async (req, res) => {
+  try {
+    const { email, type, page = 1, limit = 10 } = req.query;
+
+    const filter = {};
+    if (type) filter.tripType = type;
+
+    const skip = (page - 1) * limit;
+
+    // Fetch trips
+    const trips = await TripItineraryModel.find(filter)
+      .sort({ createdAt: -1 }) // most recent
+      .skip(skip)
+      .limit(Number(limit));
+
+    // Get favorites
+    let favoriteTripIdsSet = new Set();
+    if (email) {
+      const favorites = await FavoriteTripModel.find({ email }).select('tripId -_id');
+      favoriteTripIdsSet = new Set(favorites.map(f => f.tripId));
+    }
+
+    // Format response
+    const formatted = trips.map(trip => {
+      const tripObj = trip.toObject();
+      return {
+        tripId: tripObj.tripId,
+        state: tripObj.state || "",
+        duration: tripObj.duration,
+        images: getTop3Images(tripObj),
+        actualPrice: tripObj.payment?.actualPrice || 0,
+        subTotal: tripObj.payment?.subTotal || 0,
+        startDate: tripObj.startDate,
+        isFavorite: favoriteTripIdsSet.has(tripObj.tripId),
+      };
+    });
+
+    res.status(200).json({ trips: formatted });
+  } catch (error) {
+    console.error("Error in getPackageTripsWith3Images:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+
+
+module.exports = { createTrip, getAllTrips, getTripsByFilter, getHomeTripDetails, getStateTrips, getTripsByState, getPlanYourOwnTrips, getUpcommingTrips, getTripDetailsById };
