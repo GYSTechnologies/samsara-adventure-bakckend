@@ -4,10 +4,39 @@ const createBooking = async (req, res) => {
     try {
         const newUpdate = new BookingSchema(req.body);
         const savedUpdate = await newUpdate.save();
-        res.status(201).json(savedUpdate);
+        res.status(201).json({ message: "Trip Booked Successfully!" });
     } catch (error) {
         res.status(400).json({ error: "Failed to create trip update", message: error.message });
     }
 };
 
-module.exports = { createBooking };
+const getMyPlans = async (req, res) => {
+    try {
+        const { email } = req.query;
+
+        if (!email) {
+            return res.status(400).json({ message: "Email is required." });
+        }
+
+        const bookings = await BookingSchema.find({ email }).select(
+            "tripId title duration startDate endDate isPaymentUpdated tripType"
+        );
+
+        const response = bookings.map(booking => ({
+            tripId: booking.tripId,
+            title: booking.title,
+            duration: booking.duration,
+            startDate: booking.startDate,
+            endDate: booking.endDate,
+            paymentStatus: booking.isPaymentUpdated,
+            tripType: booking.tripType
+        }));
+
+        res.status(200).json({plans : response});
+    } catch (error) {
+        console.error("Error fetching plans:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+module.exports = { createBooking, getMyPlans };

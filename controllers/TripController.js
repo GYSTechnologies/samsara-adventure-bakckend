@@ -31,15 +31,11 @@ createTrip = async (req, res) => {
     // Map images from req.files
     const mainImages = (req.files['images'] || []).map(file => file.path);
 
-    const itineraryWithImages = itineraryArray.map((item, index) => {
-      const imgField = `itinerary[${index}][image]`;
-      const imageFile = req.files[imgField]?.[0];
+    // No image injection needed anymore
+    const itineraryWithoutImages = itineraryArray.map(item => ({
+      ...item
+    }));
 
-      return {
-        ...item,
-        image: imageFile?.path || '', // required field in schema
-      };
-    });
 
     const newTrip = new TripItineraryModel({
       tripType,
@@ -56,7 +52,7 @@ createTrip = async (req, res) => {
       startDate,
       endDate,
       duration,
-      itinerary: itineraryWithImages,
+      itinerary: itineraryWithoutImages,
     });
 
     const savedTrip = await newTrip.save();
@@ -75,7 +71,6 @@ createTrip = async (req, res) => {
     });
   }
 };
-
 
 const getAllTrips = async (req, res) => {
   const { email } = req.params;
@@ -225,7 +220,7 @@ const getTripDetailsById = async (req, res) => {
     const trip = await TripItineraryModel.findOne({ tripId }).select('-_id -__v');
 
     if (!trip) {
-      return res.status(404).json({ success: false, message: "Trip not found" });
+      return res.status(404).json({ message: "Trip not found" });
     }
 
     // Check if trip is favorite for given email
@@ -502,23 +497,7 @@ const getPlanYourOwnTrips = async (req, res) => {
 
 
 const getTop3Images = (trip) => {
-  const finalImages = [];
-
-  // Add from trip images
-  if (Array.isArray(trip.images)) {
-    finalImages.push(...trip.images.slice(0, 3));
-  }
-
-  // Add from itinerary images if needed
-  if (finalImages.length < 3 && Array.isArray(trip.itinerary)) {
-    for (let step of trip.itinerary) {
-      if (step.image && finalImages.length < 3) {
-        finalImages.push(step.image);
-      }
-    }
-  }
-
-  return finalImages.slice(0, 3);
+  return (Array.isArray(trip.images) ? trip.images.slice(0, 3) : []);
 };
 
 const getUpcommingTrips = async (req, res) => {
@@ -555,6 +534,7 @@ const getUpcommingTrips = async (req, res) => {
         subTotal: tripObj.payment?.subTotal || 0,
         startDate: tripObj.startDate,
         isFavorite: favoriteTripIdsSet.has(tripObj.tripId),
+        tripType: tripObj.tripType
       };
     });
 
