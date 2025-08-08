@@ -19,17 +19,23 @@ const BookingSchema = new mongoose.Schema({
   translator: { type: String, default: "" },
   image: { type: String, required: true },
   tripType: { type: String, required: true },
+  isPaymentPending: { type: Boolean, default: false },
   isPaymentUpdated: { type: Boolean, default: false },
-  changes: { type: String },
-  iteneraryChanges: [{ type: String }],
-  meetDate: { type: String },
-  meetTime: { type: String },
+  changes: { type: String, default: "" },
+  iteneraryChanges: { type: String, default: "" },
+  meetDate: { type: String, default: "" },
+  pickupAndDrop: {
+    type: String, default: ""
+  },
+  bookedDate: { type: String },
   payment: {
     subtotal: { type: Number, required: true },
     taxation: { type: Number, required: true },
     insurance: { type: Number, required: true },
     activities: { type: Number, required: true },
-    grandTotal: { type: Number, required: true }
+    grandTotal: { type: Number, required: true },
+    transactionId: { type: String, default: "" },
+    paymentDate: { type: String, default: "" }
   }
 }, {
   timestamps: true

@@ -1,5 +1,6 @@
 const TripItineraryModel = require('../models/TripItinerarySchema');
 const FavoriteTripModel = require('../models/FavoriteTripSchema')
+const cloudinary = require('../cloudinary');
 
 createTrip = async (req, res) => {
   try {
@@ -9,6 +10,7 @@ createTrip = async (req, res) => {
       state,
       description,
       category,
+      isSessional, // sessional trip or not
       overview,
       inclusions,
       exclusions,
@@ -17,7 +19,9 @@ createTrip = async (req, res) => {
       endDate,
       duration,
       payment,
-      itinerary
+      itinerary,
+      pickupDropLocation,
+      isActive
     } = req.body;
 
     // Parse arrays sent as strings
@@ -48,19 +52,20 @@ createTrip = async (req, res) => {
       exclusions: exclusionsArray,
       activities: activitiesArray,
       category: category,
+      isSessional: isSessional,
       payment: paymentObj,
       startDate,
       endDate,
       duration,
       itinerary: itineraryWithoutImages,
+      pickupDropLocation: pickupDropLocation,
+      isActive: isActive
     });
 
     const savedTrip = await newTrip.save();
 
     return res.status(201).json({
-      success: 1,
-      message: 'Trip created successfully!',
-      trip: savedTrip
+      message: 'Trip created successfully!'
     });
   } catch (error) {
     console.error(error);
@@ -71,6 +76,58 @@ createTrip = async (req, res) => {
     });
   }
 };
+
+const deleteTripById = async (req, res) => {
+  const { tripId } = req.params;
+
+  try {
+    const trip = await TripItineraryModel.findOne({ tripId });
+
+    if (!trip) {
+      return res.status(404).json({ message: 'Trip not found' });
+    }
+
+    // Delete images from Cloudinary
+    if (trip.images && trip.images.length > 0) {
+      const deletionPromises = trip.images.map(async (imageUrl) => {
+        try {
+          // Extract public_id from the URL
+          const publicId = extractPublicId(imageUrl);
+          if (publicId) {
+            await cloudinary.uploader.destroy(publicId);
+          }
+        } catch (err) {
+          console.error('Failed to delete Cloudinary image:', err.message);
+        }
+      });
+
+      await Promise.all(deletionPromises);
+    }
+
+    // Delete the trip document
+    await TripItineraryModel.deleteOne({ tripId });
+
+    res.status(200).json({ message: 'Trip and images deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting trip:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Helper to extract publicId from Cloudinary URL
+function extractPublicId(imageUrl) {
+  try {
+    const urlParts = imageUrl.split('/');
+    const fileNameWithExt = urlParts[urlParts.length - 1]; // e.g., abc123.jpg
+    const folder = urlParts[urlParts.length - 2]; // e.g., trip_images
+    const publicId = `${folder}/${fileNameWithExt.split('.')[0]}`; // trip_images/abc123
+    return publicId;
+  } catch (err) {
+    console.error('Error extracting publicId:', err.message);
+    return null;
+  }
+}
+
 
 const getAllTrips = async (req, res) => {
   const { email } = req.params;
@@ -248,7 +305,7 @@ const getHomeTripDetails = async (req, res) => {
   try {
     const { name, category, email, page = 1, limit = 10 } = req.query;
 
-    const filter = {};
+    const filter = { isSessional: true };
 
     // Apply filters
     if (category) {
@@ -266,7 +323,7 @@ const getHomeTripDetails = async (req, res) => {
 
     // Fetch required fields only
     const trips = await TripItineraryModel.find(filter)
-      .select('tripId tripType state category payment.actualPrice payment.subTotal images')
+      .select('tripId tripType state category payment.actualPrice payment.subTotal images isSessional')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(Number(limit));
@@ -289,7 +346,8 @@ const getHomeTripDetails = async (req, res) => {
         actualPrice: tripObj.payment.actualPrice,
         subTotal: tripObj.payment.subTotal,
         image: tripObj.images?.[0] || null,
-        isFavorite: favoriteTripIdsSet.has(tripObj.tripId)
+        isFavorite: favoriteTripIdsSet.has(tripObj.tripId),
+        isSessional: tripObj.isSessional
       };
     });
 
@@ -304,9 +362,7 @@ const getStateTrips = async (req, res) => {
   try {
     const { state, sortBy = 'recent', page = 1, limit = 20 } = req.query;
 
-    const filter = {
-      tripType: 'PACKAGE'
-    };
+    const filter = {};
 
     if (state && state !== 'null' && state !== '') {
       filter.state = state;
@@ -371,15 +427,20 @@ const getTripsByState = async (req, res) => {
       email,
       page = 1,
       limit = 10,
+      isSessional,
       sortBy
     } = req.query;
 
-    const filter = {
-      tripType: 'PACKAGE' // Only PACKAGE trips
-    };
+    const filter = {};
 
     if (state) filter.state = state;
     if (category) filter.category = category;
+
+    if (isSessional === 'true' || isSessional === true) {
+      filter.isSessional = true;
+    } else if (isSessional === 'false' || isSessional === false) {
+      filter.isSessional = false;
+    }
 
     // Date filters
     if (startDate || endDate) {
@@ -412,7 +473,7 @@ const getTripsByState = async (req, res) => {
 
     // Query trips
     const trips = await TripItineraryModel.find(filter)
-      .select('tripId title images activities duration payment.actualPrice payment.subTotal')
+      .select('tripId title images activities duration payment.actualPrice payment.subTotal tripType')
       .sort(sortOption)
       .skip(skip)
       .limit(Number(limit));
@@ -427,7 +488,8 @@ const getTripsByState = async (req, res) => {
         subTotal: tripObj.payment?.subTotal || 0,
         duration: tripObj.duration,
         activities: tripObj.activities || [],
-        isFavorite: favoriteTripIdsSet.has(tripObj.tripId)
+        isFavorite: favoriteTripIdsSet.has(tripObj.tripId),
+        tripType: tripObj.tripType
       };
     });
 
@@ -545,6 +607,4 @@ const getUpcommingTrips = async (req, res) => {
   }
 };
 
-
-
-module.exports = { createTrip, getAllTrips, getTripsByFilter, getHomeTripDetails, getStateTrips, getTripsByState, getPlanYourOwnTrips, getUpcommingTrips, getTripDetailsById };
+module.exports = { createTrip, getAllTrips, getTripsByFilter, getHomeTripDetails, getStateTrips, getTripsByState, getPlanYourOwnTrips, getUpcommingTrips, getTripDetailsById, deleteTripById };

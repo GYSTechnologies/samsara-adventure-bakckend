@@ -1,7 +1,10 @@
 const bcrypt = require('bcrypt');
 const UserModel = require('../models/UserModel');
+const Booking = require('../models/BookingSchema')
+const FavoriteTrip = require('../models/FavoriteTripSchema');
 const nodemailer = require('nodemailer');
 const crypto = require('crypto')
+const cloudinary = require('../cloudinary');
 
 const transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -295,4 +298,56 @@ const updateProfile = async (req, res) => {
     }
 };
 
-module.exports = { signup, verifyEmail, login, changePassword, sendOtpForResetPassword, verifyEmailForResetPassword, resetPassword,updateProfile };
+const deleteUser = async (req, res) => {
+    const { email } = req.params;
+    try {
+        const user = await UserModel.findOneAndDelete({ email });
+        if (!user) {
+            return res.status(400).json({ message: "User not found!" });
+        }
+
+        try {
+            // Extract public_id from the URL
+            const publicId = extractPublicId(user.profileUrl);
+            if (publicId) {
+                await cloudinary.uploader.destroy(publicId);
+            }
+        } catch (err) {
+            console.error('Failed to delete image:', err.message);
+        }
+
+        // Delete user's bookings
+        try {
+            await Booking.deleteMany({ email });
+        } catch (err) {
+            console.error("Failed to delete bookings:", err.message);
+        }
+
+        // Delete user's favorites
+        try {
+            await FavoriteTrip.deleteMany({ email });
+        } catch (err) {
+            console.error("Failed to delete favorites:", err.message);
+        }
+
+        return res.status(200).json({ message: "User and related data deleted successfully." });
+    } catch (error) {
+        console.error("Error while deleting user:", error); // ✅ fixed variable name
+        return res.status(500).json({ message: "Error while deleting user!" });
+    }
+}
+
+function extractPublicId(imageUrl) {
+    try {
+        const urlParts = imageUrl.split('/');
+        const fileNameWithExt = urlParts[urlParts.length - 1]; // e.g., abc123.jpg
+        const folder = urlParts[urlParts.length - 2]; // e.g., trip_images
+        const publicId = `${folder}/${fileNameWithExt.split('.')[0]}`; // trip_images/abc123
+        return publicId;
+    } catch (err) {
+        console.error('Error extracting publicId:', err.message);
+        return null;
+    }
+}
+
+module.exports = { signup, verifyEmail, login, changePassword, sendOtpForResetPassword, verifyEmailForResetPassword, resetPassword, updateProfile, deleteUser };

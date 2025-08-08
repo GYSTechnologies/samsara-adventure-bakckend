@@ -69,6 +69,19 @@ const TripItinerarySchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  isSessional: {
+    type: Boolean,
+    required: true
+  },
+  pickupDropLocation: {
+    type: String,
+    required: true
+  },
+  isActive: {
+    type: Boolean,
+    required: true,
+    default: false
+  },
   description: String,
   images: [String],
   overview: [String],
