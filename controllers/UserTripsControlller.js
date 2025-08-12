@@ -1,5 +1,6 @@
 const FavoriteTrip = require('../models/FavoriteTripSchema');
 const TripItineraryModel = require('../models/TripItinerarySchema');
+const Booking = require('../models/BookingSchema')
 
 const toggleFavoriteTrip = async (req, res) => {
   try {
@@ -74,6 +75,4 @@ const getFavoriteTripsByUser = async (req, res) => {
     res.status(500).json({ success: false, message: 'Error fetching favorite trips', error: error.message });
   }
 };
-
-
 module.exports = { toggleFavoriteTrip, getFavoriteTripsByUser };
