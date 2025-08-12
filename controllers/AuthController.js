@@ -1,7 +1,10 @@
 const bcrypt = require('bcrypt');
 const UserModel = require('../models/UserModel');
+const Booking = require('../models/BookingSchema')
+const FavoriteTrip = require('../models/FavoriteTripSchema');
 const nodemailer = require('nodemailer');
 const crypto = require('crypto')
+const cloudinary = require('../cloudinary');
 
 const transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -26,15 +29,6 @@ const signup = async (req, res, next) => {
     if (existUser) {
         return res.status(400).json({ message: "This email already exist!" });
     }
-    let phoneAvailable
-    try {
-        phoneAvailable = await UserModel.findOne({ phoneNumber });
-    } catch (e) {
-        return console.log(e);
-    }
-    if (phoneAvailable) {
-        return res.status(400).json({ message: "This phone number already in use!" });
-    }
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
@@ -43,17 +37,49 @@ const signup = async (req, res, next) => {
         const otp = crypto.randomInt(1000, 9999);
 
         // Send OTP via email
+        // transporter.sendMail({
+        //     from: process.env.EMAIL,
+        //     to: email,
+        //     subject: 'Verify Your Email',
+        //     text: `Your OTP code is ${otp}. It is valid for 5 minutes.`
+        // }, (err, info) => {
+        //     if (err) {
+        //         console.error("Error sending OTP email:", err);
+        //         return res.status(500).json({ message: "Error while sending OTP" });
+        //     }
+        // });
+
         transporter.sendMail({
-            from: process.env.EMAIL,
+            from: `"Samsara Adventure" <${process.env.EMAIL}>`,
             to: email,
-            subject: 'Verify Your Email',
-            text: `Your OTP code is ${otp}. It is valid for 5 minutes.`
+            subject: '🔐 Email Verification - Your OTP Code',
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+                    <h2 style="color: #4CAF50; text-align: center;">Email Verification</h2>
+                    <p>Dear User,</p>
+                    <p>Thank you for registering with <strong>Samsara Adventure</strong>. Please use the following One-Time Password (OTP) to verify your email address:</p>
+                    <div style="text-align: center; margin: 20px 0;">
+                        <span style="display: inline-block; font-size: 24px; letter-spacing: 3px; background: #f4f4f4; padding: 10px 20px; border-radius: 5px; font-weight: bold;">
+                            ${otp}
+                        </span>
+                    </div>
+                    <p>This OTP will expire in <strong>5 minutes</strong>. Please do not share this code with anyone for security reasons.</p>
+                    <p>If you did not request this verification, please ignore this email.</p>
+                    <br>
+                    <p>Best regards,<br><strong>Samsara Adventure</strong> Support Team</p>
+                    <hr>
+                    <p style="font-size: 12px; color: #888; text-align: center;">
+                        This is an automated message. Please do not reply to this email.
+                    </p>
+                </div>
+            `
         }, (err, info) => {
             if (err) {
                 console.error("Error sending OTP email:", err);
                 return res.status(500).json({ message: "Error while sending OTP" });
             }
         });
+
 
         // Store OTP and user data temporarily (in memory)
         otpStore[email] = {
@@ -140,18 +166,16 @@ const login = async (req, res, next) => {
 
 const changePassword = async (req, res) => {
     const { email, oldPassword, newPassword } = req.body;
+
     let existUser;
     try {
-        existUser = await UserModel.findOne({ email });
+        existUser = await UserModel.findOne({ email })
     } catch (err) {
-        console.error("Error finding user:", err);
-        return res.status(500).json({ message: "Error finding user!" });
+        return console.log(err);
     }
-
     if (!existUser) {
         return res.status(404).json({ message: "User not found!" });
     }
-
     const isMatch = await bcrypt.compare(oldPassword, existUser.password);
     if (!isMatch) {
         return res.status(500).json({ message: "Old password does not match!" });
@@ -187,10 +211,28 @@ const sendOtpForResetPassword = async (req, res) => {
 
         // Send OTP via email
         transporter.sendMail({
-            from: process.env.EMAIL,
+            from: `"Samsara Adventure" <${process.env.EMAIL}>`,
             to: email,
-            subject: 'Verify Your Email',
-            text: `Your OTP code is ${otp}. It is valid for 5 minutes.`
+            subject: '🔐 Reset Password Verification - Your OTP Code',
+            text: `Your OTP code is ${otp}. It is valid for 5 minutes.`,
+            html: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+                <h2 style="color: #D8327D; text-align: center;">Reset Your Password</h2>
+                <p>Dear User,</p>
+                <p>We have received a request to reset the password for your <strong>Samsara Adventure</strong> account. Please use the OTP below to proceed with resetting your password:</p>
+                <div style="text-align: center; margin: 20px 0;">
+                    <span style="display: inline-block; font-size: 24px; letter-spacing: 3px; background: #f4f4f4; padding: 10px 20px; border-radius: 5px; font-weight: bold;">
+                        ${otp}
+                    </span>
+                </div>
+                <p>This OTP will expire in <strong>5 minutes</strong>. If you did not request a password reset, please ignore this email and ensure your account security.</p>
+                <p>After entering this OTP, you will be able to set a new password for your account.</p>
+                <br>
+                    <p>Best regards,<br><strong>Samsara Adventure</strong> Support Team</p>
+                    <hr>
+                        <p style="font-size: 12px; color: #888; text-align: center;">
+                            This is an automated message. Please do not reply to this email.
+                        </p>
+                    </div>`
         }, (err, info) => {
             if (err) {
                 console.error("Error sending OTP email:", err);
@@ -279,4 +321,83 @@ const resetPassword = async (req, res) => {
     }
 }
 
-module.exports = { signup, verifyEmail, login, changePassword, sendOtpForResetPassword, verifyEmailForResetPassword, resetPassword };
+const updateProfile = async (req, res) => {
+    const { email, name } = req.body;
+    try {
+        const updateData = {};
+        if (name) updateData.name = name;
+        if (req.file && req.file.path) {
+            updateData.profileUrl = req.file.path;
+        }
+
+        const updatedUser = await UserModel.findOneAndUpdate(
+            { email },
+            updateData,
+            { new: true }
+        ).select('-_id -__v -password');
+
+        if (!updatedUser) {
+            return res.status(404).json({ message: "User not found!" });
+        }
+
+        return res.status(200).json({ updatedUser });
+
+    } catch (err) {
+        console.error("Error updating user profile:", err);
+        return res.status(500).json({ message: "Error updating user profile!" });
+    }
+};
+
+const deleteUser = async (req, res) => {
+    const { email } = req.params;
+    try {
+        const user = await UserModel.findOneAndDelete({ email });
+        if (!user) {
+            return res.status(400).json({ message: "User not found!" });
+        }
+
+        try {
+            // Extract public_id from the URL
+            const publicId = extractPublicId(user.profileUrl);
+            if (publicId) {
+                await cloudinary.uploader.destroy(publicId);
+            }
+        } catch (err) {
+            console.error('Failed to delete image:', err.message);
+        }
+
+        // Delete user's bookings
+        try {
+            await Booking.deleteMany({ email });
+        } catch (err) {
+            console.error("Failed to delete bookings:", err.message);
+        }
+
+        // Delete user's favorites
+        try {
+            await FavoriteTrip.deleteMany({ email });
+        } catch (err) {
+            console.error("Failed to delete favorites:", err.message);
+        }
+
+        return res.status(200).json({ message: "User and related data deleted successfully." });
+    } catch (error) {
+        console.error("Error while deleting user:", error); // ✅ fixed variable name
+        return res.status(500).json({ message: "Error while deleting user!" });
+    }
+}
+
+function extractPublicId(imageUrl) {
+    try {
+        const urlParts = imageUrl.split('/');
+        const fileNameWithExt = urlParts[urlParts.length - 1]; // e.g., abc123.jpg
+        const folder = urlParts[urlParts.length - 2]; // e.g., trip_images
+        const publicId = `${folder}/${fileNameWithExt.split('.')[0]}`; // trip_images/abc123
+        return publicId;
+    } catch (err) {
+        console.error('Error extracting publicId:', err.message);
+        return null;
+    }
+}
+
+module.exports = { signup, verifyEmail, login, changePassword, sendOtpForResetPassword, verifyEmailForResetPassword, resetPassword, updateProfile, deleteUser };
