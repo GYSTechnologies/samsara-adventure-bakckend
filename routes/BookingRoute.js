@@ -1,9 +1,11 @@
 const express = require('express')
 const router = express.Router()
 
-const { createPackageBooking,createPlanOwnTripBooking } = require('../controllers/BookingController')
+const { createBooking, getMyPlans, deleteByEmailAndTripId, getMyPlans2 } = require('../controllers/BookingController')
 
-router.post('/createPackageBooking', createPackageBooking);
-router.post('/createPlanOwnTripBooking',createPlanOwnTripBooking)
+router.post('/createBooking', createBooking);
+router.get('/getMyPlans', getMyPlans);
+router.get('/getMyPlans2', getMyPlans2);
+router.delete('/deleteByEmailAndTripId', deleteByEmailAndTripId);
 
 module.exports = router;
