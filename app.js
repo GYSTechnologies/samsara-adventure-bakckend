@@ -2,6 +2,7 @@ const express = require('express');
 const app = express();
 const multer = require('multer');
 const mongoose = require('mongoose');
+const cors = require('cors');
 require('dotenv').config();
 
 app.use(express.json());
@@ -12,6 +13,7 @@ mongoose.connect(process.env.MONGODB_URI)
 
 
 app.use(express.json())
+app.use(cors());
 
 const authRoute = require('./routes/AuthRoute')
 const bookRoute = require('./routes/BookingRoute')
