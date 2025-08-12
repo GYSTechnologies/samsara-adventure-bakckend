@@ -57,7 +57,7 @@ const getMyPlans = async (req, res) => {
     }
 };
 
-const getMyPlans2 = async (req, res) => {
+const getMyTrips = async (req, res) => {
     try {
         const { email } = req.query;
 
@@ -65,9 +65,15 @@ const getMyPlans2 = async (req, res) => {
             return res.status(400).json({ message: "Email is required." });
         }
 
-        const bookings = await Booking.find({ email }).select(
-            "tripId title duration startDate endDate image"
-        );
+        // Get today's date without time (midnight)
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // Only fetch trips starting today or in the future
+        const bookings = await Booking.find({
+            email,
+            startDate: { $gte: today.toISOString().split("T")[0] }
+        }).select("tripId title duration startDate endDate image");
 
         const response = bookings.map(booking => ({
             tripId: booking.tripId,
@@ -75,7 +81,7 @@ const getMyPlans2 = async (req, res) => {
             duration: booking.duration,
             startDate: booking.startDate,
             endDate: booking.endDate,
-            image: image
+            image: booking.image
         }));
 
         res.status(200).json({ plans: response });
@@ -85,4 +91,38 @@ const getMyPlans2 = async (req, res) => {
     }
 };
 
-module.exports = { createBooking, getMyPlans, deleteByEmailAndTripId, getMyPlans2 };
+const getPastTrips = async (req, res) => {
+    try {
+        const { email } = req.query;
+
+        if (!email) {
+            return res.status(400).json({ message: "Email is required." });
+        }
+
+        // Get today's date without time (midnight)
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // Only fetch trips that ended before today
+        const bookings = await Booking.find({
+            email,
+            endDate: { $lt: today.toISOString().split("T")[0] }
+        }).select("tripId title duration startDate endDate image");
+
+        const response = bookings.map(booking => ({
+            tripId: booking.tripId,
+            title: booking.title,
+            duration: booking.duration,
+            startDate: booking.startDate,
+            endDate: booking.endDate,
+            image: booking.image
+        }));
+
+        res.status(200).json({ pastPlans: response });
+    } catch (error) {
+        console.error("Error fetching past trips:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+module.exports = { createBooking, getMyPlans, deleteByEmailAndTripId, getMyTrips,getPastTrips };

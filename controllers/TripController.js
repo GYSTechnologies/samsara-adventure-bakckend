@@ -14,6 +14,7 @@ createTrip = async (req, res) => {
       overview,
       inclusions,
       exclusions,
+      tags,
       activities,
       startDate,
       endDate,
@@ -57,6 +58,7 @@ createTrip = async (req, res) => {
       startDate,
       endDate,
       duration,
+      tags: tags,
       itinerary: itineraryWithoutImages,
       pickupDropLocation: pickupDropLocation,
       isActive: isActive
@@ -300,7 +302,7 @@ const getTripDetailsById = async (req, res) => {
   }
 };
 
-
+// Top Destination
 const getHomeTripDetails = async (req, res) => {
   try {
     const { name, category, email, page = 1, limit = 10 } = req.query;
@@ -323,7 +325,7 @@ const getHomeTripDetails = async (req, res) => {
 
     // Fetch required fields only
     const trips = await TripItineraryModel.find(filter)
-      .select('tripId tripType state category payment.actualPrice payment.subTotal images isSessional')
+      .select('tripId title payment.actualPrice payment.subTotal images isSessional description tags state')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(Number(limit));
@@ -340,14 +342,15 @@ const getHomeTripDetails = async (req, res) => {
       const tripObj = trip.toObject();
       return {
         tripId: tripObj.tripId,
-        tripType: tripObj.tripType,
+        title: tripObj.title,
         state: tripObj.state,
-        category: tripObj.category,
         actualPrice: tripObj.payment.actualPrice,
         subTotal: tripObj.payment.subTotal,
         image: tripObj.images?.[0] || null,
         isFavorite: favoriteTripIdsSet.has(tripObj.tripId),
-        isSessional: tripObj.isSessional
+        isSessional: tripObj.isSessional,
+        description: tripObj.description,
+        tags: tripObj.tags
       };
     });
 
@@ -358,6 +361,7 @@ const getHomeTripDetails = async (req, res) => {
   }
 };
 
+// State wise
 const getStateTrips = async (req, res) => {
   try {
     const { state, sortBy = 'recent', page = 1, limit = 20 } = req.query;
@@ -391,7 +395,7 @@ const getStateTrips = async (req, res) => {
     const skip = (page - 1) * limit;
 
     const trips = await TripItineraryModel.find(filter)
-      .select('state payment.actualPrice payment.subTotal images startDate duration')
+      .select('state payment.actualPrice payment.subTotal images startDate duration description tags')
       .sort(sort)
       .skip(skip)
       .limit(Number(limit));
@@ -404,7 +408,9 @@ const getStateTrips = async (req, res) => {
         subTotal: t.payment.subTotal,
         image: t.images?.[0] || null,
         startDate: t.startDate,
-        duration: t.duration
+        duration: t.duration,
+        description: t.description,
+        tags: t.tags
       };
     });
 
@@ -415,11 +421,13 @@ const getStateTrips = async (req, res) => {
   }
 };
 
+// Specific state wise or sessional
 const getTripsByState = async (req, res) => {
   try {
     const {
       state,
       category,
+      tripType,
       startDate,
       endDate,
       minPrice,
@@ -433,47 +441,61 @@ const getTripsByState = async (req, res) => {
 
     const filter = {};
 
-    if (state) filter.state = state;
-    if (category) filter.category = category;
-
-    if (isSessional === 'true' || isSessional === true) {
-      filter.isSessional = true;
-    } else if (isSessional === 'false' || isSessional === false) {
-      filter.isSessional = false;
+    // State filter (ignore if empty)
+    if (state && state.trim() !== "") {
+      filter.state = { $regex: `^${state}$`, $options: "i" };
     }
 
-    // Date filters
-    if (startDate || endDate) {
-      filter.startDate = {};
-      if (startDate) filter.startDate.$gte = new Date(startDate);
-      if (endDate) filter.startDate.$lte = new Date(endDate);
+    // Category filter (ignore if empty)
+    if (category && category.trim() !== "") {
+      filter.category = { $regex: `^${category}$`, $options: "i" };
+    }
+
+    // Trip type filter (PACKAGE, CUSTOMIZED) — only apply if provided
+    if (tripType && tripType.trim() !== "") {
+      filter.tripType = { $regex: `^${tripType}$`, $options: "i" };
+    }
+
+    // Boolean filter
+    if (isSessional === "true" || isSessional === true) {
+      filter.isSessional = true;
+    }
+
+    // Date filters (only if valid date)
+    if (startDate && !isNaN(new Date(startDate).getTime())) {
+      filter.startDate = filter.startDate || {};
+      filter.startDate.$gte = new Date(startDate);
+    }
+    if (endDate && !isNaN(new Date(endDate).getTime())) {
+      filter.startDate = filter.startDate || {};
+      filter.startDate.$lte = new Date(endDate);
     }
 
     // Price filters
     if (minPrice || maxPrice) {
-      filter['payment.actualPrice'] = {};
-      if (minPrice) filter['payment.actualPrice'].$gte = Number(minPrice);
-      if (maxPrice) filter['payment.actualPrice'].$lte = Number(maxPrice);
+      filter["payment.actualPrice"] = {};
+      if (minPrice) filter["payment.actualPrice"].$gte = Number(minPrice);
+      if (maxPrice) filter["payment.actualPrice"].$lte = Number(maxPrice);
     }
 
     const skip = (page - 1) * limit;
 
     // Sorting
-    let sortOption = { createdAt: -1 }; // Default: recent
-    if (sortBy === 'price_asc') sortOption = { 'payment.actualPrice': 1 };
-    else if (sortBy === 'price_desc') sortOption = { 'payment.actualPrice': -1 };
-    else if (sortBy === 'duration') sortOption = { duration: 1 };
+    let sortOption = { createdAt: -1 }; // Default
+    if (sortBy === "price_asc") sortOption = { "payment.actualPrice": 1 };
+    else if (sortBy === "price_desc") sortOption = { "payment.actualPrice": -1 };
+    else if (sortBy === "duration") sortOption = { duration: 1 };
 
     // Get favorite trip IDs
     let favoriteTripIdsSet = new Set();
-    if (email) {
-      const favorites = await FavoriteTripModel.find({ email }).select('tripId -_id');
+    if (email && email.trim() !== "") {
+      const favorites = await FavoriteTripModel.find({ email }).select("tripId -_id");
       favoriteTripIdsSet = new Set(favorites.map(f => f.tripId));
     }
 
     // Query trips
     const trips = await TripItineraryModel.find(filter)
-      .select('tripId title images activities duration payment.actualPrice payment.subTotal tripType')
+      .select("tripId title images activities duration payment.actualPrice payment.subTotal tripType")
       .sort(sortOption)
       .skip(skip)
       .limit(Number(limit));
@@ -494,9 +516,10 @@ const getTripsByState = async (req, res) => {
     });
 
     res.status(200).json({ trips: formattedTrips });
+
   } catch (error) {
-    console.error('Error fetching minimal trip details:', error);
-    res.status(500).json({ message: 'Internal Server Error' });
+    console.error("Error fetching minimal trip details:", error);
+    res.status(500).json({ message: "Internal Server Error" });
   }
 };
 

@@ -88,6 +88,7 @@ const TripItinerarySchema = new mongoose.Schema({
   inclusions: [String],
   exclusions: [String],
   activities: [String],
+  tags: [String],
   payment: {
     type: paymentSchema,
     required: true
