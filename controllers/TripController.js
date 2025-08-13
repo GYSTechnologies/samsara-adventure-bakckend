@@ -117,63 +117,6 @@ const deleteTripById = async (req, res) => {
   }
 };
 
-createEvent = async (req, res) => {
-  try {
-    const {
-      title,
-      description,
-      price,
-      location,
-      date
-    } = req.body;
-    const image = req.file ? req.file.path : null;
-
-    const event = new EventModel({
-      title: title,
-      description: description,
-      price: price,
-      image: image,
-      location: location,
-      date: date
-    });
-
-    await event.save();
-    return res.status(201).json({
-      message: 'Event created successfully!'
-    });
-  } catch (error) {
-    console.error('Error creating event:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-}
-
-const getAllEvents = async (req, res) => {
-  try {
-    const { page = 1, limit = 10 } = req.query;
-    // Calculate how many docs to skip
-    const skip = (page - 1) * limit;
-
-    // Fetch paginated events
-    const events = await EventModel
-      .find()
-      .select("eventId title image date")
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
-
-    return res.status(200).json({
-      events
-    });
-
-  } catch (err) {
-    console.error("Error fetching events:", err);
-    res.status(500).json({
-      message: "Internal server error"
-    });
-  }
-};
-
-
 // Helper to extract publicId from Cloudinary URL
 function extractPublicId(imageUrl) {
   try {
@@ -678,4 +621,4 @@ const getUpcommingTrips = async (req, res) => {
   }
 };
 
-module.exports = { createTrip, getAllTrips, getTripsByFilter, getHomeTripDetails, getStateTrips, getTripsByState, getPlanYourOwnTrips, getUpcommingTrips, getTripDetailsById, deleteTripById, createEvent, getAllEvents };
+module.exports = { createTrip, getAllTrips, getTripsByFilter, getHomeTripDetails, getStateTrips, getTripsByState, getPlanYourOwnTrips, getUpcommingTrips, getTripDetailsById, deleteTripById };

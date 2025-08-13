@@ -19,6 +19,7 @@ const tripRoute = require('./routes/TripRoute')
 const userTripRoute = require('./routes/UserTripRoute')
 const dashboardRoute = require('./routes/web/DashboardRoute')
 const adminTripsRoute = require('./routes/web/AdminTripsRoute')
+const eventRoute = require('./routes/EventRoute')
 
 app.use('/', authRoute);
 app.use('/', bookRoute);
@@ -26,6 +27,7 @@ app.use('/', tripRoute);
 app.use('/', userTripRoute);
 app.use('/', dashboardRoute);
 app.use('/', adminTripsRoute);
+app.use('/', eventRoute);
 
 app.use('/', (req, res) => {
     res.send("Samsara Backend")
