@@ -2,6 +2,57 @@ const TripItineraryModel = require('../models/TripItinerarySchema');
 const FavoriteTripModel = require('../models/FavoriteTripSchema')
 const cloudinary = require('../cloudinary');
 
+// controllers/searchController.js
+
+const searchDestinations = async (req, res) => {
+  try {
+    const { query } = req.query;
+    
+    if (!query || query.trim().length < 2) {
+      return res.status(400).json({
+        success: false,
+        message: 'Search query must be at least 2 characters long'
+      });
+    }
+
+    // Search in states, titles, and tags
+    const results = await TripItineraryModel.aggregate([
+      {
+        $match: {
+          $or: [
+            { state: { $regex: query, $options: 'i' } },
+            { title: { $regex: query, $options: 'i' } },
+            { tags: { $regex: query, $options: 'i' } }
+          ]
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          state: 1,
+          title: 1,
+          images: 1,
+          tripId: 1
+        }
+      },
+      { $limit: 10 }
+    ]);
+
+    res.status(200).json({
+      success: true,
+      results
+    });
+
+  } catch (error) {
+    console.error('Search error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
+
 createTrip = async (req, res) => {
   try {
     const {
@@ -630,4 +681,4 @@ const getUpcommingTrips = async (req, res) => {
   }
 };
 
-module.exports = { createTrip, getAllTrips, getTripsByFilter, getHomeTripDetails, getStateTrips, getTripsByState, getPlanYourOwnTrips, getUpcommingTrips, getTripDetailsById, deleteTripById };
+module.exports = { createTrip,searchDestinations, getAllTrips, getTripsByFilter, getHomeTripDetails, getStateTrips, getTripsByState, getPlanYourOwnTrips, getUpcommingTrips, getTripDetailsById, deleteTripById };

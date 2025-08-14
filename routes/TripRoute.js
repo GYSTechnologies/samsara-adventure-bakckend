@@ -2,10 +2,11 @@ const express = require('express')
 const router = express.Router();
 const parser = require('../middlewares/upload');
 
-const { createTrip, getAllTrips, getTripsByFilter, getHomeTripDetails, getStateTrips, getTripsByState, getPlanYourOwnTrips, getUpcommingTrips, getTripDetailsById, deleteTripById } = require('../controllers/TripController')
+const { createTrip, getAllTrips, getTripsByFilter, getHomeTripDetails, getStateTrips, getTripsByState, getPlanYourOwnTrips, getUpcommingTrips, getTripDetailsById, deleteTripById,searchDestinations } = require('../controllers/TripController')
 router.post('/createTrip', parser.fields([
     { name: 'images', maxCount: 5 }
 ]), createTrip);
+router.get('/search', searchDestinations);
 router.get('/getAllTrips/:email', getAllTrips);
 router.get('/getTripsByFilter', getTripsByFilter);
 router.get('/getHomeTripDetails', getHomeTripDetails);

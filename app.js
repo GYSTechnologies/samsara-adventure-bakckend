@@ -13,7 +13,11 @@ mongoose.connect(process.env.MONGODB_URI)
 
 
 app.use(express.json())
-app.use(cors());
+// Example for Express
+app.use(cors({
+  origin: 'http://localhost:5173',
+  credentials: true
+}));
 
 const authRoute = require('./routes/AuthRoute')
 const bookRoute = require('./routes/BookingRoute')
@@ -21,13 +25,17 @@ const tripRoute = require('./routes/TripRoute')
 const userTripRoute = require('./routes/UserTripRoute')
 const dashboardRoute = require('./routes/web/DashboardRoute')
 const adminTripsRoute = require('./routes/web/AdminTripsRoute')
+const paymentRoute = require('./routes/payment.routes')
+const customRoutes = require('./routes/customtrip.routes')
 
-app.use('/', authRoute);
-app.use('/', bookRoute);
-app.use('/', tripRoute);
-app.use('/', userTripRoute);
+app.use('/api/auth', authRoute);
+app.use('/api/booking', bookRoute);
+app.use('/api/trip', tripRoute);
+app.use('/api/user', userTripRoute);
 app.use('/', dashboardRoute);
 app.use('/', adminTripsRoute);
+app.use('/api/payment', paymentRoute);
+app.use("/api/custom-trip",customRoutes);
 
 app.use('/', (req, res) => {
     res.send("Samsara Backend")

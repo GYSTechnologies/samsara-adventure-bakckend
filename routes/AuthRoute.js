@@ -3,7 +3,7 @@ const router = express.Router()
 const parser = require('../middlewares/upload');
 const { signup, verifyEmail, login, changePassword, sendOtpForResetPassword, verifyEmailForResetPassword, resetPassword, updateProfile, deleteUser } = require('../controllers/AuthController')
 
-router.post('/signupUser', signup);
+router.post('/signupUser',  parser.single('profileUrl'),signup);
 router.post("/verifyEmail", verifyEmail);
 router.post('/loginUser', login);
 router.put('/changePassword', changePassword);
