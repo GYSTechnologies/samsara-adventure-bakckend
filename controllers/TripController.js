@@ -464,19 +464,19 @@ const getTripsByState = async (req, res) => {
 
     // Price filters
     if (minPrice || maxPrice) {
-      filter["payment.actualPrice"] = {};
-      if (minPrice) filter["payment.actualPrice"].$gte = Number(minPrice);
-      if (maxPrice) filter["payment.actualPrice"].$lte = Number(maxPrice);
+      filter["payment.subTotal"] = {};
+      if (minPrice) filter["payment.subTotal"].$gte = Number(minPrice);
+      if (maxPrice) filter["payment.subTotal"].$lte = Number(maxPrice);
     }
 
     const skip = (page - 1) * limit;
 
     // Sorting
     let sortOption = { createdAt: -1 }; // Default
-    if (sortBy === "price_asc") sortOption = { "payment.actualPrice": 1 };
-    else if (sortBy === "price_desc") sortOption = { "payment.actualPrice": -1 };
+    if (sortBy === "price_asc") sortOption = { "payment.subTotal": 1 };
+    else if (sortBy === "price_desc") sortOption = { "payment.subTotal": -1 };
     else if (sortBy === "duration") sortOption = { duration: 1 };
-
+    else if (sortBy === "recent") sortOption = { createdAt: -1 };
     // Get favorite trip IDs
     let favoriteTripIdsSet = new Set();
     if (email && email.trim() !== "") {
