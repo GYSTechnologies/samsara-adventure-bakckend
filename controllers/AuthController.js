@@ -20,28 +20,6 @@ let otpStore = {};
 const JWT_SECRET = process.env.JWT_SECRET;
 
 const signup = async (req, res, next) => {
-    const { name, email, password, userType, profileUrl, phoneNumber } = req.body
-    let existUser;
-    try {
-        existUser = await UserModel.findOne({ email });
-    } catch (e) {
-        return console.log(e);
-    }
-    if (existUser) {
-        return res.status(400).json({ message: "This email already exist!" });
-    }
-
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    try {
-        const otp = crypto.randomInt(1000, 9999);
-
-        transporter.sendMail({
-            from: `"Samsara Adventure" <${process.env.EMAIL}>`,
-            to: email,
-            subject: '🔐 Email Verification - Your OTP Code',
-            html: `
   const { name, email, password, userType, profileUrl, phoneNumber } = req.body;
   let existUser;
   try {
@@ -64,7 +42,7 @@ const signup = async (req, res, next) => {
     //     from: process.env.EMAIL,
     //     to: email,
     //     subject: 'Verify Your Email',
-    //     text: `Your OTP code is ${otp}. It is valid for 5 minutes.`
+    //     text: Your OTP code is ${otp}. It is valid for 5 minutes.
     // }, (err, info) => {
     //     if (err) {
     //         console.error("Error sending OTP email:", err);
@@ -132,82 +110,6 @@ const signup = async (req, res, next) => {
   }
 };
 
-// const verifyEmail = async (req, res) => {
-//   try {
-//     const { email, otp } = req.body;
-
-//     // Check if the OTP exists for the email
-//     if (!otpStore[email]) {
-//       return res
-//         .status(400)
-//         .json({ message: "No OTP request found for this email" });
-//     }
-
-//     // Verify OTP and check for expiration (5 minutes = 300000 ms)
-//     const currentTime = Date.now();
-//     if (currentTime - otpStore[email].createdAt > 300000) {
-//       delete otpStore[email]; // Remove the expired OTP
-//       return res
-//         .status(400)
-//         .json({ message: "OTP has expired. Please click on resend." });
-//     }
-
-//     // Check if the provided OTP matches the stored one
-//     if (otpStore[email].otp != otp) {
-//       return res
-//         .status(400)
-//         .json({ message: "Invalid OTP. Please try again." });
-//     }
-
-//     // If OTP is valid, save the user to the database
-//     const newUser = new UserModel({
-//       ...otpStore[email].user,
-//     });
-
-//     await newUser.save();
-
-//     delete otpStore[email];
-
-//     return res.status(201).json({
-//       name: newUser.name,
-//       email: newUser.email,
-//       userType: newUser.userType,
-//       profileUrl: newUser.profileUrl,
-//       phoneNumber: newUser.phoneNumber,
-//     });
-//   } catch (error) {
-//     console.error("Error during email verification:", error);
-//     return res.status(500).json({ message: "Error during email verification" });
-//   }
-// };
-
-// const login = async (req, res, next) => {
-//   const { email, password } = req.body;
-
-//   let existUser;
-//   try {
-//     existUser = await UserModel.findOne({ email });
-//   } catch (err) {
-//     return console.log(err);
-//   }
-//   if (!existUser) {
-//     return res.status(404).json({ message: "User not found!" });
-//   }
-//   const isMatch = await bcrypt.compare(password, existUser.password);
-//   if (!isMatch) {
-//     return res.status(400).json({ message: "Invalid email or password" });
-//   }
-//   return res.status(200).json({
-//     name: existUser.name,
-//     email: existUser.email,
-//     userType: existUser.userType,
-//     profileUrl: existUser.profileUrl,
-//     phoneNumber: existUser.phoneNumber,
-//   });
-// };
-
-
-// Email verification with JWT
 const verifyEmail = async (req, res) => {
   try {
     const { email, otp } = req.body;

@@ -66,7 +66,7 @@ const BookingSchema = new mongoose.Schema({
   travelWithPet: { type: Boolean, default: false },
   decoration: { type: Boolean, default: false },
   photograper: { type: Boolean, default: false },
-  translator: { type: String, default: "" },
+  translator: { type: Boolean, default: false },
   image: { type: String, required: false },
   tripType: { type: String, required: false },
   isPaymentPending: { type: Boolean, default: false },
