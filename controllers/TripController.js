@@ -1,5 +1,6 @@
 const TripItineraryModel = require('../models/TripItinerarySchema');
 const FavoriteTripModel = require('../models/FavoriteTripSchema')
+const EventModel = require('../models/EventSchema')
 const cloudinary = require('../cloudinary');
 
 // controllers/searchController.js
@@ -166,6 +167,63 @@ const deleteTripById = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+createEvent = async (req, res) => {
+  try {
+    const {
+      title,
+      description,
+      price,
+      location,
+      date
+    } = req.body;
+    const image = req.file ? req.file.path : null;
+
+    const event = new EventModel({
+      title: title,
+      description: description,
+      price: price,
+      image: image,
+      location: location,
+      date: date
+    });
+
+    await event.save();
+    return res.status(201).json({
+      message: 'Event created successfully!'
+    });
+  } catch (error) {
+    console.error('Error creating event:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
+const getAllEvents = async (req, res) => {
+  try {
+    const { page = 1, limit = 10 } = req.query;
+    // Calculate how many docs to skip
+    const skip = (page - 1) * limit;
+
+    // Fetch paginated events
+    const events = await EventModel
+      .find()
+      .select("eventId title image date")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    return res.status(200).json({
+      events
+    });
+
+  } catch (err) {
+    console.error("Error fetching events:", err);
+    res.status(500).json({
+      message: "Internal server error"
+    });
+  }
+};
+
 
 // Helper to extract publicId from Cloudinary URL
 function extractPublicId(imageUrl) {
@@ -412,62 +470,52 @@ const getHomeTripDetails = async (req, res) => {
   }
 };
 
-// State wise
 const getStateTrips = async (req, res) => {
   try {
-    const { state, sortBy = 'recent', page = 1, limit = 20 } = req.query;
+    const { page = 1, limit = 20 } = req.query;
 
     const filter = {};
 
-    if (state && state !== 'null' && state !== '') {
-      filter.state = state;
-    }
-
-    // Determine sort field
-    let sort = {};
-    switch (sortBy) {
-      case 'price_asc':
-        sort['payment.subTotal'] = 1;
-        break;
-      case 'price_desc':
-        sort['payment.subTotal'] = -1;
-        break;
-      case 'title_asc':
-        sort['title'] = 1;
-        break;
-      case 'title_desc':
-        sort['title'] = -1;
-        break;
-      case 'recent':
-      default:
-        sort['createdAt'] = -1;
-    }
-
-    const skip = (page - 1) * limit;
-
+    // Step 1: Get all trips (no sort yet)
     const trips = await TripItineraryModel.find(filter)
-      .select('state payment.actualPrice payment.subTotal images startDate duration description tags')
-      .sort(sort)
-      .skip(skip)
-      .limit(Number(limit));
+      .select('state payment.actualPrice payment.subTotal images startDate duration description tags');
 
-    const formattedTrips = trips.map(trip => {
-      const t = trip.toObject();
-      return {
-        state: t.state,
-        actualPrice: t.payment.actualPrice,
-        subTotal: t.payment.subTotal,
-        image: t.images?.[0] || null,
-        startDate: t.startDate,
-        duration: t.duration,
-        description: t.description,
-        tags: t.tags
-      };
+    // Step 2: Get unique by state (first occurrence only)
+    const seenStates = new Set();
+    const uniqueTrips = trips.filter(trip => {
+      if (seenStates.has(trip.state)) return false;
+      seenStates.add(trip.state);
+      return true;
     });
 
-    res.status(200).json({ trips: formattedTrips });
+    // Step 3: Sort unique trips by price ascending
+    uniqueTrips.sort((a, b) => a.payment.subTotal - b.payment.subTotal);
+
+    // Step 4: Pagination AFTER deduplication
+    const startIndex = (page - 1) * limit;
+    const paginatedTrips = uniqueTrips.slice(startIndex, startIndex + Number(limit));
+
+    // Step 5: Format response
+    const formattedTrips = paginatedTrips.map(t => ({
+      state: t.state,
+      actualPrice: t.payment.actualPrice,
+      subTotal: t.payment.subTotal,
+      image: t.images?.[0] || null,
+      startDate: t.startDate,
+      duration: t.duration,
+      description: t.description,
+      tags: t.tags
+    }));
+
+    res.status(200).json({
+      total: uniqueTrips.length, // total unique trips
+      page: Number(page),
+      limit: Number(limit),
+      trips: formattedTrips
+    });
+
   } catch (error) {
-    console.error('Error fetching trip summaries by state:', error);
+    console.error('Error fetching unique state trips sorted by price:', error);
     res.status(500).json({ message: 'Internal Server Error' });
   }
 };

@@ -107,15 +107,14 @@ const getPastTrips = async (req, res) => {
         const bookings = await Booking.find({
             email,
             endDate: { $lt: today.toISOString().split("T")[0] }
-        }).select("tripId title duration startDate endDate image");
+        }).select("tripId title bookedDate payment.grandTotal image");
 
         const response = bookings.map(booking => ({
             tripId: booking.tripId,
             title: booking.title,
-            duration: booking.duration,
-            startDate: booking.startDate,
-            endDate: booking.endDate,
-            image: booking.image
+            bookedDate: booking.bookedDate,
+            image: booking.image,
+            grandTotal: booking.payment.grandTotal
         }));
 
         res.status(200).json({ pastPlans: response });
@@ -125,4 +124,62 @@ const getPastTrips = async (req, res) => {
     }
 };
 
-module.exports = { createBooking, getMyPlans, deleteByEmailAndTripId, getMyTrips,getPastTrips };
+const getMyTripDetails = async (req, res) => {
+    const { email, tripId } = req.query;
+
+    if (!email || !tripId) {
+        return res.status(400).json({ message: "Email and TripId is required." });
+    }
+    try {
+        const booking = await Booking.findOne({ email, tripId });
+        if (!booking) {
+            return res.status(404).json({ message: "Trip Details not found!" });
+        }
+        res.status(200).json({
+            image: booking.image,
+            title: booking.title,
+            duration: booking.duration,
+            startDate: booking.startDate,
+            endDate: booking.endDate,
+            name: booking.name,
+            email: booking.email,
+            phone: booking.phone,
+            payment: booking.payment
+        });
+    } catch (error) {
+        console.error("Error deleting booking:", error);
+        res.status(500).json({ message: "Server error." });
+    }
+}
+
+
+const getTripHistoryDetails = async (req, res) => {
+    const { email, tripId } = req.query;
+
+    if (!email || !tripId) {
+        return res.status(400).json({ message: "Email and TripId is required." });
+    }
+    try {
+        const booking = await Booking.findOne({ email, tripId });
+        if (!booking) {
+            return res.status(404).json({ message: "Trip history not found!" });
+        }
+        res.status(200).json({
+            title: booking.title,
+            duration: booking.duration,
+            state: booking.state,
+            adults: booking.adults,
+            children: booking.childrens,
+            startDate: booking.startDate,
+            endDate: booking.endDate,
+            grandTotal: booking.payment.grandTotal,
+            paymentStatus: booking.isPaymentPending
+        });
+    } catch (error) {
+        console.error("Error deleting booking:", error);
+        res.status(500).json({ message: "Server error." });
+    }
+}
+
+
+module.exports = { createBooking, getMyPlans, deleteByEmailAndTripId, getMyTrips, getPastTrips, getMyTripDetails, getTripHistoryDetails };

@@ -15,5 +15,6 @@ router.get('/getTripsByState', getTripsByState);
 router.get('/getPlanYourOwnTrips', getPlanYourOwnTrips);
 router.get('/getUpcomingTrips', getUpcommingTrips);
 router.get('/getTripDetailsById', getTripDetailsById);
-router.delete('/deleteTripById/:tripId',deleteTripById);
+router.delete('/deleteTripById/:tripId', deleteTripById);
+// router.get('/getAllEvents', getAllEvents);
 module.exports = router;
