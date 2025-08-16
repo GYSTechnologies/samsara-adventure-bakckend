@@ -1,1 +1,1 @@
-const bodyParser = require('body-parser');
+/api/payment
