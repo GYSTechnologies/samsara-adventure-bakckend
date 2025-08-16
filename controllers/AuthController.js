@@ -20,6 +20,28 @@ let otpStore = {};
 const JWT_SECRET = process.env.JWT_SECRET;
 
 const signup = async (req, res, next) => {
+    const { name, email, password, userType, profileUrl, phoneNumber } = req.body
+    let existUser;
+    try {
+        existUser = await UserModel.findOne({ email });
+    } catch (e) {
+        return console.log(e);
+    }
+    if (existUser) {
+        return res.status(400).json({ message: "This email already exist!" });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    try {
+        const otp = crypto.randomInt(1000, 9999);
+
+        transporter.sendMail({
+            from: `"Samsara Adventure" <${process.env.EMAIL}>`,
+            to: email,
+            subject: '🔐 Email Verification - Your OTP Code',
+            html: `
   const { name, email, password, userType, profileUrl, phoneNumber } = req.body;
   let existUser;
   try {

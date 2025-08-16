@@ -25,6 +25,7 @@ const tripRoute = require('./routes/TripRoute')
 const userTripRoute = require('./routes/UserTripRoute')
 const dashboardRoute = require('./routes/web/DashboardRoute')
 const adminTripsRoute = require('./routes/web/AdminTripsRoute')
+const eventRoute = require('./routes/EventRoute')
 const paymentRoute = require('./routes/payment.routes')
 const customRoutes = require('./routes/customtrip.routes')
 
@@ -34,6 +35,7 @@ app.use('/api/trip', tripRoute);
 app.use('/api/user', userTripRoute);
 app.use('/', dashboardRoute);
 app.use('/', adminTripsRoute);
+app.use('/', eventRoute);
 app.use('/api/payment', paymentRoute);
 app.use("/api/custom-trip",customRoutes);
 
