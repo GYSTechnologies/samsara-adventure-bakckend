@@ -33,7 +33,8 @@ const searchDestinations = async (req, res) => {
           state: 1,
           title: 1,
           images: 1,
-          tripId: 1
+          tripId: 1,
+          tripType: 1
         }
       },
       { $limit: 10 }
