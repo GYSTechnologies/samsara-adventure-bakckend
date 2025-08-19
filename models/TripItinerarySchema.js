@@ -90,6 +90,10 @@ const TripItinerarySchema = new mongoose.Schema({
     type: paymentSchema,
     required: true
   },
+  totalSeats: {
+    type: Number,
+    required: true
+  },
   startDate: {
     type: String,
     required: true
