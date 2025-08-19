@@ -73,6 +73,7 @@ createTrip = async (req, res) => {
       endDate,
       duration,
       payment,
+      totalSeats,
       itinerary,
       pickupDropLocation,
       isActive
@@ -108,6 +109,7 @@ createTrip = async (req, res) => {
       category: category,
       isSessional: isSessional,
       payment: paymentObj,
+      totalSeats:totalSeats,
       startDate,
       endDate,
       duration,

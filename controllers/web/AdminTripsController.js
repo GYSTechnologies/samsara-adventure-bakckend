@@ -72,7 +72,7 @@ const getPlanOwnTrips = async (req, res) => {
 const getPayments = async (req, res) => {
     try {
         const bookings = await Booking.find({ isPaymentPending: false }).select(
-            "name payment.grandTotal tripId paymentDate transactionId"
+            "name payment.grandTotal tripId payment.paymentDate transactionId"
         );
         if (!bookings || bookings.length === 0) {
             return res.status(404).json({ message: "No bookings found" });
