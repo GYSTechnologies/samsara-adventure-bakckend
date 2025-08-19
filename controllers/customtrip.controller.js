@@ -88,7 +88,21 @@ exports.submitCustomRequest = async (req, res) => {
       requestStatus: "PENDING",
       bookedDate: new Date().toISOString(),
       changes: formData.specialRequests || "No special requests",
+
+
+      iteneraryChanges: formData.iteneraryChanges || "Not provided",
       current_location: formData.pickupLocation,
+      travelWithPet: formData.travelWithPet || false,
+      decoration: formData.decoration || false,
+      photograper: formData.photograper || false,
+      translator: formData.translator || false,
+      title: formData.title || "",
+      startDate: formData.startDate || "",
+      endDate: formData.endDate || "",
+      image: formData.image || "",
+      duration: formData.duration || "",
+      isPaymentPending: formData.isPaymentPending || true
+
     });
 
     await newRequest.save();

@@ -42,7 +42,7 @@ const signup = async (req, res, next) => {
     //     from: process.env.EMAIL,
     //     to: email,
     //     subject: 'Verify Your Email',
-    //     text: `Your OTP code is ${otp}. It is valid for 5 minutes.`
+    //     text: Your OTP code is ${otp}. It is valid for 5 minutes.
     // }, (err, info) => {
     //     if (err) {
     //         console.error("Error sending OTP email:", err);

@@ -42,12 +42,12 @@ const getMyPlans = async (req, res) => {
 
         const response = bookings.map(booking => ({
             tripId: booking.tripId,
-            title: booking.title,
-            duration: booking.duration,
-            startDate: booking.startDate,
-            endDate: booking.endDate,
-            paymentStatus: booking.isPaymentUpdated,
-            tripType: booking.tripType
+            title: booking.title || "",
+            duration: booking.duration || "",
+            startDate: booking.startDate || "",
+            endDate: booking.endDate || "",
+            paymentStatus: booking.isPaymentUpdated || false,
+            tripType: booking.tripType || "PACKAGE"
         }));
 
         res.status(200).json({ plans: response });
@@ -77,11 +77,11 @@ const getMyTrips = async (req, res) => {
 
         const response = bookings.map(booking => ({
             tripId: booking.tripId,
-            title: booking.title,
-            duration: booking.duration,
-            startDate: booking.startDate,
-            endDate: booking.endDate,
-            image: booking.image
+            title: booking.title || "",
+            duration: booking.duration || "",
+            startDate: booking.startDate || "",
+            endDate: booking.endDate || "",
+            image: booking.image || ""
         }));
 
         res.status(200).json({ plans: response });
@@ -111,10 +111,10 @@ const getPastTrips = async (req, res) => {
 
         const response = bookings.map(booking => ({
             tripId: booking.tripId,
-            title: booking.title,
-            bookedDate: booking.bookedDate,
-            image: booking.image,
-            grandTotal: booking.payment.grandTotal
+            title: booking.title || "",
+            bookedDate: booking.bookedDate || "",
+            image: booking.image || "",
+            grandTotal: booking.payment.grandTotal || 0
         }));
 
         res.status(200).json({ pastPlans: response });
@@ -136,14 +136,14 @@ const getMyTripDetails = async (req, res) => {
             return res.status(404).json({ message: "Trip Details not found!" });
         }
         res.status(200).json({
-            image: booking.image,
-            title: booking.title,
-            duration: booking.duration,
-            startDate: booking.startDate,
-            endDate: booking.endDate,
-            name: booking.name,
-            email: booking.email,
-            phone: booking.phone,
+            image: booking.image || "",
+            title: booking.title || "",
+            duration: booking.duration || "",
+            startDate: booking.startDate || "",
+            endDate: booking.endDate || "",
+            name: booking.name || "",
+            email: booking.email || "",
+            phone: booking.phone || 0,
             payment: booking.payment
         });
     } catch (error) {
@@ -165,15 +165,15 @@ const getTripHistoryDetails = async (req, res) => {
             return res.status(404).json({ message: "Trip history not found!" });
         }
         res.status(200).json({
-            title: booking.title,
-            duration: booking.duration,
-            state: booking.state,
-            adults: booking.adults,
-            children: booking.childrens,
-            startDate: booking.startDate,
-            endDate: booking.endDate,
-            grandTotal: booking.payment.grandTotal,
-            paymentStatus: booking.isPaymentPending
+            title: booking.title || "",
+            duration: booking.duration || "",
+            state: booking.state || "",
+            adults: booking.adults || "",
+            children: booking.childrens || "",
+            startDate: booking.startDate || "",
+            endDate: booking.endDate || "",
+            grandTotal: booking.payment.grandTotal || 0,
+            paymentStatus: booking.isPaymentPending || true
         });
     } catch (error) {
         console.error("Error deleting booking:", error);

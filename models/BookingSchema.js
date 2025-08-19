@@ -50,8 +50,8 @@
 
 const mongoose = require("mongoose");
 
-const BookingSchema = new mongoose.Schema(
-  {
+
+const BookingSchema = new mongoose.Schema({
     email: { type: String, required: true },
     name: { type: String, required: false },
     title: { type: String, required: false },
