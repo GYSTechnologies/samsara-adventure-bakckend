@@ -1,77 +1,81 @@
-const Booking = require("../models/BookingSchema")
+const Booking = require("../models/BookingSchema");
 // Helper function for status messages
 function getStatusMessage(status) {
   const messages = {
     PENDING: "Your request is pending approval",
     APPROVED: "Your custom trip has been approved",
     REJECTED: "Your request has been rejected",
-    COMPLETED: "Your trip has been completed"
+    COMPLETED: "Your trip has been completed",
   };
   return messages[status] || "Status unknown";
 }
 
-// @desc Check request status by email
+//Check request status by email
 exports.checkRequestStatus = async (req, res) => {
   try {
     const { email, tripId } = req.query;
-    
+
     if (!email || !tripId) {
       return res.status(400).json({ error: "Email and tripId are required" });
     }
 
-    const existingRequest = await Booking.findOne({ 
+    const existingRequest = await Booking.findOne({
       email,
       tripId,
-      tripType: "CUSTOMIZED"
+      tripType: "CUSTOMIZED",
     });
 
     if (!existingRequest) {
-      return res.json({ 
+      return res.json({
         status: "NEW_USER",
-        message: "No existing request found"
+        message: "No existing request found",
       });
     }
 
     return res.json({
       status: existingRequest.requestStatus || "PENDING",
       // tripData: existingRequest,
-      message: getStatusMessage(existingRequest.requestStatus)
+      message: getStatusMessage(existingRequest.requestStatus),
     });
-
   } catch (error) {
     console.error("Error checking request status:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };
 
-// @desc Submit new custom trip request
+//  Submit new custom trip request
 exports.submitCustomRequest = async (req, res) => {
   try {
     const formData = req.body;
 
     // Validate required fields
     const requiredFields = [
-      'email', 'phone', 'tripId', 'startDate', 
-      'adults', 'childrens', 'pickupLocation'
+      "email",
+      "phone",
+      "tripId",
+      "startDate",
+      "adults",
+      "childrens",
+      "current_location", // Consistent naming
     ];
-    
-    const missingFields = requiredFields.filter(field => !formData[field]);
+
+    const missingFields = requiredFields.filter((field) => !formData[field]);
     if (missingFields.length > 0) {
-      return res.status(400).json({ 
-        error: `Missing required fields: ${missingFields.join(', ')}` 
+      return res.status(400).json({
+        error: `Missing required fields: ${missingFields.join(", ")}`,
       });
     }
 
     // Check for existing request
-    const existingRequest = await Booking.findOne({ 
-      email: formData.email, 
-      tripId: formData.tripId 
+    const existingRequest = await Booking.findOne({
+      email: formData.email,
+      tripId: formData.tripId,
     });
-    
+
     if (existingRequest) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: "You already have a request for this trip",
-        existingStatus: existingRequest.requestStatus
+        existingStatus: existingRequest.requestStatus,
       });
     }
 
@@ -84,25 +88,24 @@ exports.submitCustomRequest = async (req, res) => {
       requestStatus: "PENDING",
       bookedDate: new Date().toISOString(),
       changes: formData.specialRequests || "No special requests",
-      current_location: formData.pickupLocation
+      current_location: formData.pickupLocation,
     });
 
     await newRequest.save();
 
-    res.json({ 
+    res.json({
       success: true,
       requestId: newRequest._id,
       status: newRequest.requestStatus,
-      message: "Custom trip request submitted successfully"
+      message: "Custom trip request submitted successfully",
     });
-
   } catch (error) {
     console.error("Error submitting custom request:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };
 
-// @desc Update custom trip request (Admin only)
+//Update custom trip request (Admin only)
 exports.updateRequest = async (req, res) => {
   try {
     const { id } = req.params;
@@ -114,7 +117,7 @@ exports.updateRequest = async (req, res) => {
     }
 
     request.requestStatus = status;
-    
+
     if (status === "APPROVED" && paymentDetails) {
       request.payment = paymentDetails;
       request.isPaymentPending = true;
@@ -130,9 +133,8 @@ exports.updateRequest = async (req, res) => {
     res.json({
       success: true,
       message: `Request ${status.toLowerCase()} successfully`,
-      request
+      request,
     });
-
   } catch (error) {
     console.error("Error updating request:", error);
     res.status(500).json({ error: "Internal server error" });

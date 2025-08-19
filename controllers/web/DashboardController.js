@@ -1,5 +1,5 @@
 const TripItinerary = require('../../models/TripItinerarySchema')
-const Booking = require('../../models/BookingSchema')
+const Booking = require('../../models/BookingSchema');
 
 const getDashboardTopStatics = async (req, res) => {
     try {

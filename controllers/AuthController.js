@@ -110,82 +110,6 @@ const signup = async (req, res, next) => {
   }
 };
 
-// const verifyEmail = async (req, res) => {
-//   try {
-//     const { email, otp } = req.body;
-
-//     // Check if the OTP exists for the email
-//     if (!otpStore[email]) {
-//       return res
-//         .status(400)
-//         .json({ message: "No OTP request found for this email" });
-//     }
-
-//     // Verify OTP and check for expiration (5 minutes = 300000 ms)
-//     const currentTime = Date.now();
-//     if (currentTime - otpStore[email].createdAt > 300000) {
-//       delete otpStore[email]; // Remove the expired OTP
-//       return res
-//         .status(400)
-//         .json({ message: "OTP has expired. Please click on resend." });
-//     }
-
-//     // Check if the provided OTP matches the stored one
-//     if (otpStore[email].otp != otp) {
-//       return res
-//         .status(400)
-//         .json({ message: "Invalid OTP. Please try again." });
-//     }
-
-//     // If OTP is valid, save the user to the database
-//     const newUser = new UserModel({
-//       ...otpStore[email].user,
-//     });
-
-//     await newUser.save();
-
-//     delete otpStore[email];
-
-//     return res.status(201).json({
-//       name: newUser.name,
-//       email: newUser.email,
-//       userType: newUser.userType,
-//       profileUrl: newUser.profileUrl,
-//       phoneNumber: newUser.phoneNumber,
-//     });
-//   } catch (error) {
-//     console.error("Error during email verification:", error);
-//     return res.status(500).json({ message: "Error during email verification" });
-//   }
-// };
-
-// const login = async (req, res, next) => {
-//   const { email, password } = req.body;
-
-//   let existUser;
-//   try {
-//     existUser = await UserModel.findOne({ email });
-//   } catch (err) {
-//     return console.log(err);
-//   }
-//   if (!existUser) {
-//     return res.status(404).json({ message: "User not found!" });
-//   }
-//   const isMatch = await bcrypt.compare(password, existUser.password);
-//   if (!isMatch) {
-//     return res.status(400).json({ message: "Invalid email or password" });
-//   }
-//   return res.status(200).json({
-//     name: existUser.name,
-//     email: existUser.email,
-//     userType: existUser.userType,
-//     profileUrl: existUser.profileUrl,
-//     phoneNumber: existUser.phoneNumber,
-//   });
-// };
-
-
-// Email verification with JWT
 const verifyEmail = async (req, res) => {
   try {
     const { email, otp } = req.body;
@@ -270,6 +194,90 @@ const login = async (req, res, next) => {
       phoneNumber: existUser.phoneNumber,
     },
   });
+};
+
+// Signup (only one admin allowed)
+const adminSignup = async (req, res) => {
+  try {
+    const { name, email, password, phoneNumber, userType } = req.body;
+
+    if (userType !== 'admin') {
+      return res.status(403).json({ message: 'Only admin signup allowed' });
+    }
+
+    // check if admin already exists
+    const existingAdmin = await UserModel.findOne({ userType: 'admin' });
+    if (existingAdmin) {
+      return res.status(400).json({ message: 'Admin already exists. Only one admin allowed.' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Cloudinary se uploaded image ka URL
+    const profileUrl = req.file ? req.file.path : null;
+
+    const newAdmin = new UserModel({
+      name,
+      email,
+      password: hashedPassword,
+      userType: 'admin',
+      phoneNumber,
+      profileUrl
+    });
+
+    await newAdmin.save();
+
+    res.status(201).json({ 
+      message: 'Admin registered successfully', 
+      admin: {
+        name: newAdmin.name,
+        email: newAdmin.email,
+        phoneNumber: newAdmin.phoneNumber,
+        profileUrl: newAdmin.profileUrl
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+// Login (only admin)
+const adminLogin = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    const admin = await UserModel.findOne({ email, userType: 'admin' });
+    if (!admin) {
+      return res.status(404).json({ message: 'Admin not found' });
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, admin.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    // generate JWT
+    const token = jwt.sign(
+      { id: admin._id, email: admin.email, userType: admin.userType },
+      process.env.JWT_SECRET,
+      { expiresIn: '1d' }
+    );
+
+    res.status(200).json({
+      message: 'Login successful',
+      token,
+      admin: {
+        id: admin._id,
+        name: admin.name,
+        email: admin.email,
+        userType: admin.userType,
+        profileUrl: admin.profileUrl,
+        phoneNumber: admin.phoneNumber
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
 };
 
 
@@ -537,4 +545,6 @@ module.exports = {
   resetPassword,
   updateProfile,
   deleteUser,
+  adminLogin,
+  adminSignup
 };

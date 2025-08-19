@@ -86,6 +86,8 @@ exports.verifyPayment = async (req, res) => {
     bookingData,
   } = req.body;
 
+
+
   try {
     // 1. Verify Razorpay signature
     const generatedSignature = crypto
@@ -146,6 +148,9 @@ exports.verifyPayment = async (req, res) => {
         grandTotal: bookingData.totalAmount || 0,
         transactionId: razorpay_payment_id,
         paymentDate: new Date().toISOString(),
+        razorpay_payment_id,
+        razorpay_order_id,
+        razorpay_signature,
       },
     };
 
@@ -163,7 +168,7 @@ exports.verifyPayment = async (req, res) => {
     // 4. Send success response
     res.json({
       success: true,
-      bookingId: booking._id,
+      bookingId: booking,
       paymentId: razorpay_payment_id,
     });
   } catch (error) {
