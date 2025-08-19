@@ -141,6 +141,7 @@ exports.verifyPayment = async (req, res) => {
       tripType: bookingData.tripDetails?.tripType || "PACKAGE",
       isPaymentPending: false,
       isPaymentUpdated: true,
+      
       payment: {
         subtotal: bookingData.tripDetails?.payment?.subTotal || bookingData.payment?.subtotal || 0,
         taxation: bookingData.tripDetails?.payment?.taxation || bookingData.payment?.taxation || 0,
@@ -169,7 +170,7 @@ exports.verifyPayment = async (req, res) => {
     // 4. Send success response
     res.json({
       success: true,
-      bookingId: booking,
+      bookingId: booking.bookingId,
       paymentId: razorpay_payment_id,
     });
   } catch (error) {
