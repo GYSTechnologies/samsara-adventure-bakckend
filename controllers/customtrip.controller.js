@@ -91,7 +91,7 @@ exports.submitCustomRequest = async (req, res) => {
 
 
       iteneraryChanges: formData.iteneraryChanges || "Not provided",
-      current_location: formData.pickupLocation,
+      current_location: formData.pickupLocation || formData.current_location,
       travelWithPet: formData.travelWithPet || false,
       decoration: formData.decoration || false,
       photograper: formData.photograper || false,

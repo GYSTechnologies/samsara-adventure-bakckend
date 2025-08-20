@@ -38,7 +38,7 @@ const getMyPlans = async (req, res) => {
 
         const bookings = await Booking.find({ email }).select(
             "tripId title duration startDate endDate isPaymentUpdated tripType"
-        );
+        ).sort({ updatedAt: -1 });
 
         const response = bookings.map(booking => ({
             tripId: booking.tripId,
@@ -181,5 +181,34 @@ const getTripHistoryDetails = async (req, res) => {
     }
 }
 
+const getUserTripStatics = async (req, res) => {
+    try {
+        const { email } = req.query;
 
-module.exports = { createBooking, getMyPlans, deleteByEmailAndTripId, getMyTrips, getPastTrips, getMyTripDetails, getTripHistoryDetails };
+        if (!email) {
+            return res.status(400).json({ message: "Email is required." });
+        }
+
+        // Get today's date without time (midnight)
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // Only fetch trips starting today or in the future
+        const trips = await Booking.find({
+            email,
+            startDate: { $gte: today.toISOString().split("T")[0] }
+        }).countDocuments();
+
+        const history = await Booking.find({
+            email,
+            endDate: { $lt: today.toISOString().split("T")[0] }
+        }).countDocuments();
+
+        return res.status(200).json({ trips: trips, history: history });
+    } catch (error) {
+        console.error("Error while getting statics:", error);
+        res.status(500).json({ message: "Server error." });
+    }
+};
+
+module.exports = { createBooking, getMyPlans, deleteByEmailAndTripId, getMyTrips, getPastTrips, getMyTripDetails, getTripHistoryDetails, getUserTripStatics };

@@ -1,1 +1,1 @@
-/api/payment
+api/auth

@@ -227,8 +227,8 @@ const adminSignup = async (req, res) => {
 
     await newAdmin.save();
 
-    res.status(201).json({ 
-      message: 'Admin registered successfully', 
+    res.status(201).json({
+      message: 'Admin registered successfully',
       admin: {
         name: newAdmin.name,
         email: newAdmin.email,
@@ -483,15 +483,48 @@ const updateProfile = async (req, res) => {
 
 const deleteUser = async (req, res) => {
   const { email } = req.params;
+
   try {
-    const user = await UserModel.findOneAndDelete({ email });
+    // Check if user exists
+    const user = await UserModel.findOne({ email });
     if (!user) {
       return res.status(400).json({ message: "User not found!" });
     }
 
+    // Check if user has any current bookings
+    const activeBooking = await Booking.findOne({
+      email,
+      requestStatus: { $in: ["PENDING"] }, // active trips
+    });
+
+    if (activeBooking) {
+      return res.status(400).json({
+        message: "User cannot be deleted because you have an active bookings."
+      });
+    }
+
+    // Check for package trips that are currently ongoing
+    const today = new Date().toISOString().split("T")[0]; // format yyyy-MM-dd
+
+    const ongoingPackage = await Booking.findOne({
+      email,
+      // tripType: "PACKAGE",
+      startDate: { $lte: today },
+      endDate: { $gte: today },
+    });
+
+    if (ongoingPackage) {
+      return res.status(400).json({
+        message: "User cannot be deleted because they have an ongoing trips."
+      });
+    }
+
+    // Delete user
+    const deletedUser = await UserModel.findOneAndDelete({ email });
+
+    // Delete profile picture if exists
     try {
-      // Extract public_id from the URL
-      const publicId = extractPublicId(user.profileUrl);
+      const publicId = extractPublicId(deletedUser.profileUrl);
       if (publicId) {
         await cloudinary.uploader.destroy(publicId);
       }
@@ -499,14 +532,14 @@ const deleteUser = async (req, res) => {
       console.error("Failed to delete image:", err.message);
     }
 
-    // Delete user's bookings
+    // Delete user’s past bookings (safe because no active booking exists)
     try {
       await Booking.deleteMany({ email });
     } catch (err) {
       console.error("Failed to delete bookings:", err.message);
     }
 
-    // Delete user's favorites
+    // Delete user’s favorites
     try {
       await FavoriteTrip.deleteMany({ email });
     } catch (err) {
@@ -516,11 +549,13 @@ const deleteUser = async (req, res) => {
     return res
       .status(200)
       .json({ message: "User and related data deleted successfully." });
+
   } catch (error) {
-    console.error("Error while deleting user:", error); // ✅ fixed variable name
+    console.error("Error while deleting user:", error);
     return res.status(500).json({ message: "Error while deleting user!" });
   }
 };
+
 
 function extractPublicId(imageUrl) {
   try {
