@@ -55,7 +55,6 @@ exports.submitCustomRequest = async (req, res) => {
       "tripId",
       "startDate",
       "adults",
-      "childrens",
       "current_location", // Consistent naming
     ];
 
@@ -83,7 +82,7 @@ exports.submitCustomRequest = async (req, res) => {
     const newRequest = new Booking({
       ...formData,
       name: formData.fullName || "Not provided",
-      total_members: formData.adults + formData.childrens,
+      total_members: formData.adults + formData.childrens || 0,
       tripType: "CUSTOMIZED",
       requestStatus: "PENDING",
       bookedDate: new Date().toISOString(),
