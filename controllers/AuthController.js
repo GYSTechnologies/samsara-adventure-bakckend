@@ -120,7 +120,7 @@ const verifyEmail = async (req, res) => {
 
     const currentTime = Date.now();
     if (currentTime - otpStore[email].createdAt > 300000) {
-      delete otpStore[email];
+      // delete otpStore[email];
       return res.status(400).json({ message: "OTP has expired. Please click on resend." });
     }
 
@@ -157,6 +157,65 @@ const verifyEmail = async (req, res) => {
     return res.status(500).json({ message: "Error during email verification" });
   }
 };
+
+const resetOtp = async (req, res) => {
+  try {
+    const { email } = req.query;
+
+    // Check if signup started for this email
+    if (!otpStore[email]) {
+      return res.status(400).json({ message: "No signup process found for this email. Please sign up first." });
+    }
+
+    // Generate new OTP
+    const otp = crypto.randomInt(1000, 9999);
+
+    // Send OTP via email
+    transporter.sendMail(
+      {
+        from: `"Samsara Adventure" <${process.env.EMAIL}>`,
+        to: email,
+        subject: "🔐 Reset OTP - Email Verification",
+        html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+                <h2 style="color: #2196F3; text-align: center;">New OTP Requested</h2>
+                <p>Dear User,</p>
+                <p>You have requested a new OTP for <strong>Samsara Adventure</strong>. Please use the following One-Time Password (OTP) to verify your email address:</p>
+                <div style="text-align: center; margin: 20px 0;">
+                    <span style="display: inline-block; font-size: 24px; letter-spacing: 3px; background: #f4f4f4; padding: 10px 20px; border-radius: 5px; font-weight: bold;">
+                        ${otp}
+                    </span>
+                </div>
+                <p>This OTP will expire in <strong>5 minutes</strong>. Please do not share this code with anyone for security reasons.</p>
+                <p>If you did not request this verification, please ignore this email.</p>
+                <br>
+                <p>Best regards,<br><strong>Samsara Adventure</strong> Support Team</p>
+                <hr>
+                <p style="font-size: 12px; color: #888; text-align: center;">
+                    This is an automated message. Please do not reply to this email.
+                </p>
+            </div>
+        `,
+      },
+      (err, info) => {
+        if (err) {
+          console.error("Error resending OTP email:", err);
+          return res.status(500).json({ message: "Error while resending OTP" });
+        }
+      }
+    );
+
+    // Overwrite the OTP & update timestamp
+    otpStore[email].otp = otp;
+    otpStore[email].createdAt = Date.now();
+
+    return res.status(200).json({ message: "A new OTP has been sent to your email." });
+  } catch (error) {
+    console.error("Error during OTP reset:", error);
+    return res.status(500).json({ message: "Error while resetting OTP" });
+  }
+};
+
 
 // Login with JWT
 const login = async (req, res, next) => {
@@ -581,5 +640,6 @@ module.exports = {
   updateProfile,
   deleteUser,
   adminLogin,
-  adminSignup
+  adminSignup,
+  resetOtp
 };
