@@ -37,18 +37,7 @@ const signup = async (req, res, next) => {
   try {
     const otp = crypto.randomInt(1000, 9999);
 
-    // Send OTP via email
-    // transporter.sendMail({
-    //     from: process.env.EMAIL,
-    //     to: email,
-    //     subject: 'Verify Your Email',
-    //     text: Your OTP code is ${otp}. It is valid for 5 minutes.
-    // }, (err, info) => {
-    //     if (err) {
-    //         console.error("Error sending OTP email:", err);
-    //         return res.status(500).json({ message: "Error while sending OTP" });
-    //     }
-    // });
+
 
     transporter.sendMail(
       {

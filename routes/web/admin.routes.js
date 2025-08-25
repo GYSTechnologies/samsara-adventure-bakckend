@@ -1,39 +1,139 @@
-const express = require('express')
-const router = express.Router()
-const parser = require('../../middlewares/upload');
+const express = require("express");
+const router = express.Router();
+const parser = require("../../middlewares/upload");
+const authMiddleware = require("../../middlewares/authAdminMiddleware.js");
 
-const { adminLogin, adminSignup } = require('../../controllers/AuthController')
-const { getDashboardTopStatics, getDashBoardTrips, } = require('../../controllers/web/DashboardController');
-const { getPackagesTrips, getPlanOwnTrips, getPayments, getPassengers, getEnquiries } = require('../../controllers/web/AdminTripsController');
-const { createTrip } = require('../../controllers/TripController')
-const { createEvent } = require('../../controllers/EventController')
+const { adminLogin, adminSignup } = require("../../controllers/AuthController");
+const {
+  getDashboardTopStatics,
+  getDashBoardTrips,
+} = require("../../controllers/web/DashboardController");
+const {
+  // getPackagesTrips,
+  // getPlanOwnTrips,
+  getPayments,
+  getPassengers,
+  getEnquiries,
+  getPaymentStats,
+  getPaymentDetails,
+  getRefundData,
+  getRevenueAnalytics,
+  getFailedPayments,
+  getRefundAnalytics,
+} = require("../../controllers/web/AdminTripsController");
+
+const {
+  createTrip,
+  getPackagesTrips,
+  getPlanOwnTrips,
+  updateTripStatus,
+  getTripById,
+  updateTrip,
+  getCustomizedTrips,
+  getEnrolledUsers,
+  getTripPassengers,
+  searchPassengers,
+} = require("../../controllers/TripController");
+const { createEvent } = require("../../controllers/EventController");
+
+const {
+  getCustomEnquiries,
+  getEnquiryById,
+  updateEnquiryStatus,
+  createCustomItinerary,
+  getTripDetailsById,
+  getCustomItineraryForPayment,
+} = require("../../controllers/web/enquiry.controller");
+const { protect } = require("../../middleware/authMiddleware");
+
+const {getCancellationRequests,approveCancellation,rejectCancellation} = require("../../controllers/payment.controller.js") 
 
 // --------------------ADMIN AUTH --------------------
-router.post('/signup', parser.single('profileImage'), adminSignup);
-router.post('/login', adminLogin);
+router.post("/signup", parser.single("profileImage"), adminSignup);
+router.post("/login", adminLogin);
 
+// --------------------DASHBOARD APIs (Protected) --------------------
+router.get("/getDashboardTopStatics", authMiddleware, getDashboardTopStatics);
+router.get("/getDashBoardTrips", authMiddleware, getDashBoardTrips);
 
-// --------------------DASHBOARD APIs --------------------
-router.get('/getDashboardTopStatics', getDashboardTopStatics);
-router.get('/getDashBoardTrips', getDashBoardTrips);
+// --------------------OTHER PAGES APIs (Protected) --------------------
 
+router.get("/getPassengers", authMiddleware, getPassengers);
+router.get("/getEnquiries", authMiddleware, getEnquiries);
 
-// --------------------OTHER PAGES APIs --------------------
-router.get('/getPackagesTrips', getPackagesTrips);
-router.get('/getPlanOwnTrips', getPlanOwnTrips);
-router.get('/getPayments', getPayments);
-router.get('/getPassengers', getPassengers);
-router.get('/getEnquiries', getEnquiries);
+// --------------------Payment routes  --------------------
 
+router.get("/getPayments", authMiddleware, getPayments);
+router.get("/payment-stats", authMiddleware, getPaymentStats);
+router.get("/payment-details/:tripId", authMiddleware, getPaymentDetails);
+router.get("/refunds", authMiddleware, getRefundData);
+router.get("/revenue-analytics", authMiddleware, getRevenueAnalytics);
+router.get("/failed-payments", authMiddleware, getFailedPayments);
+router.get("/refund-analytics", authMiddleware, getRefundAnalytics);
 
-// --------------------CREATE EVENT --------------------
-router.post('/createEvent', parser.single("image"), createEvent);
+// --------------------Payment Refund --------------------
 
+router.get('/cancellation-requests', authMiddleware, getCancellationRequests);
+router.put('/cancellation-requests/:id/approve', authMiddleware, approveCancellation);
+router.put('/cancellation-requests/:id/reject', authMiddleware, rejectCancellation);
 
-// --------------------CREATE TRIP --------------------
-router.post('/createTrip', parser.fields([
-    { name: 'images', maxCount: 5 }
-]), createTrip);
+// --------------------Enquiries Routes --------------------
+// User gets their custom itinerary
+router.get(
+  "/payment/custom-itinerary/:enquiryId/:email",
+  getCustomItineraryForPayment
+);
 
+router.get("/enquiries", authMiddleware, getCustomEnquiries);
+// router.get("/enquiries/stats", authMiddleware, getEnquiryStats);
+router.get("/enquiries/:id", authMiddleware, getEnquiryById);
+router.patch("/enquiries/:id/status", authMiddleware, updateEnquiryStatus);
+router.post(
+  "/enquiries/:id/create-itinerary",
+  authMiddleware,
+  createCustomItinerary
+);
+router.get("/trip-detail/:tripId", authMiddleware, getTripDetailsById);
+
+// Add this route to your enquiryRoutes.js
+router.post(
+  "/enquiries/create-itinerary",
+  authMiddleware,
+  createCustomItinerary
+);
+
+// --------------------CREATE TRIP (Protected) --------------------
+router.post(
+  "/createTrip",
+  authMiddleware,
+  parser.fields([{ name: "images", maxCount: 3 }]),
+  createTrip
+);
+
+router.get("/search-passengers", authMiddleware, searchPassengers);
+
+router.get("/trip-passengers/:tripId", authMiddleware, getTripPassengers);
+router.get("/getPackagesTrips", authMiddleware, getPackagesTrips);
+router.get("/getPlanOwnTrips", authMiddleware, getCustomizedTrips);
+
+router.patch("/trips/:tripId/status", authMiddleware, updateTripStatus);
+router.get("/trips/:id", authMiddleware, getTripById);
+// router.get("/trips/:identifier", authMiddleware, getTripById);
+
+router.get("/trips/:tripId/enrollments", getEnrolledUsers);
+router.put(
+  "/updateTrip/:id",
+  authMiddleware,
+  parser.fields([{ name: "images", maxCount: 3 }]),
+  updateTrip
+); // Max 3 images
+
+// --------------------CREATE EVENT (Protected) --------------------
+router.post(
+  "/createEvent",
+  authMiddleware,
+  parser.single("image"),
+  createEvent
+);
 
 module.exports = router;

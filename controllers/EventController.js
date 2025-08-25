@@ -1,6 +1,6 @@
 const EventModel = require('../models/EventSchema')
 
-createEvent = async (req, res) => {
+const createEvent = async (req, res) => {
     try {
         const {
             title,

@@ -92,7 +92,7 @@ const TripItinerarySchema = new mongoose.Schema({
   },
   totalSeats: {
     type: Number,
-    required: true
+    required: false,
   },
   startDate: {
     type: String,
@@ -106,6 +106,10 @@ const TripItinerarySchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  originalTripId: { type: String }, // Reference to original trip
+  customizedFor: { type: String }, // User ID or email
+  isCustom: { type: Boolean, default: false },
+  lastModified: { type: Date },
   itinerary: [itinerarySchema]
 }, {
   timestamps: true

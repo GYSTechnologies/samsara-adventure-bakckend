@@ -1,41 +1,45 @@
 const Booking = require("../models/BookingSchema");
-// Helper function for status messages
+
 function getStatusMessage(status) {
   const messages = {
     PENDING: "Your request is pending approval",
     APPROVED: "Your custom trip has been approved",
     REJECTED: "Your request has been rejected",
     COMPLETED: "Your trip has been completed",
+    PAID: "Payment completed! View your plans", // ✅ Add this
+    CONFIRMED: "Booking confirmed! View your plans"
   };
   return messages[status] || "Status unknown";
 }
 
-//Check request status by email
 exports.checkRequestStatus = async (req, res) => {
   try {
     const { email, tripId } = req.query;
 
-    if (!email || !tripId) {
-      return res.status(400).json({ error: "Email and tripId are required" });
+    if (!email) {
+      return res.status(400).json({ error: "Email is required" });
     }
 
     const existingRequest = await Booking.findOne({
-      email,
-      tripId,
+      email: email.toLowerCase().trim(),
       tripType: "CUSTOMIZED",
-    });
+      tripId: tripId.trim()
+    }).sort({ createdAt: -1 });
 
     if (!existingRequest) {
       return res.json({
         status: "NEW_USER",
-        message: "No existing request found",
+        message: "No existing request found for this trip",
       });
     }
 
     return res.json({
       status: existingRequest.requestStatus || "PENDING",
-      // tripData: existingRequest,
+      enquiryId: existingRequest._id,
       message: getStatusMessage(existingRequest.requestStatus),
+      // Add this to help UI determine what to show
+      isPaid: existingRequest.requestStatus === "PAID" || 
+              existingRequest.requestStatus === "CONFIRMED"
     });
   } catch (error) {
     console.error("Error checking request status:", error);
@@ -82,7 +86,7 @@ exports.submitCustomRequest = async (req, res) => {
     const newRequest = new Booking({
       ...formData,
       name: formData.fullName || "Not provided",
-      total_members: formData.adults + formData.childrens || 0,
+      total_members: formData.adults + (formData.childrens||0),
       tripType: "CUSTOMIZED",
       requestStatus: "PENDING",
       bookedDate: new Date().toISOString(),

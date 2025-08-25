@@ -30,6 +30,7 @@ const paymentRoute = require('./routes/payment.routes')
 const customRoutes = require('./routes/customtrip.routes')
 const userRoutes = require("./routes/profile.routes");
 const adminRoutes = require("./routes/web/admin.routes");
+const eventRoutes = require("./routes/event.routes");
 
 app.use('/api/auth', authRoute);
 app.use('/api/booking', bookRoute);
@@ -39,6 +40,9 @@ app.use('/', dashboardRoute);
 
 app.use('/api/admin',adminRoutes);
 app.use('/api/adminTrip', adminTripsRoute);
+app.use('/api/admin',adminRoutes);
+
+app.use('/api/events',eventRoutes);
 
 app.use('/', eventRoute);
 app.use('/api/payment', paymentRoute);
