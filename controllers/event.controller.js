@@ -302,14 +302,14 @@ exports.deleteEvent = async (req, res) => {
 // Create Razorpay order for event booking
 exports.createEventBookingOrder = async (req, res) => {
   try {
-    console.log("User in req:", req.user);
-    console.log("Body received:", req.body);
+    // console.log("User in req:", req.user);
+    // console.log("Body received:", req.body);
 
-    const { eventId, tickets, contactInfo } = req.body;
+    const { eventId, tickets, contactInfo,userId } = req.body;
 
-    if (!req.user) {
-      return res.status(401).json({ message: "User not authenticated" });
-    }
+    // if (!req.user) {
+    //   return res.status(401).json({ message: "User not authenticated" });
+    // }
 
     const event = await Event.findById(eventId);
     if (!event) {
@@ -362,7 +362,7 @@ exports.createEventBookingOrder = async (req, res) => {
         receipt: shortReceipt, // <-- short receipt here
         notes: {
           eventId: eventId.toString(),
-          userId: req.user._id.toString(),
+          userId: userId || req.user._id.toString(),
           tickets: JSON.stringify(tickets),
           contactInfo: JSON.stringify(contactInfo),
         },
@@ -386,7 +386,7 @@ exports.createEventBookingOrder = async (req, res) => {
     // Create temporary booking with pending status
     const booking = new EventBooking({
       event: eventId,
-      user: req.user._id,
+      user: userId || req.user._id,
       tickets,
       totalAmount,
       contactInfo,
@@ -502,8 +502,9 @@ exports.verifyPayment = async (req, res) => {
 };
 
 exports.getUserBookings = async (req, res) => {
+  const { userId } = req.query
   try {
-    const bookings = await EventBooking.find({ user: req.user._id })
+    const bookings = await EventBooking.find({ user:  userId || req.user._id })
       .populate({
         path: "event",
         model: "Event",
@@ -646,5 +647,19 @@ exports.getAdminEvents = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+exports.getCartEvent = async (req, res) => {
+  try {
+    // only select required fields
+    const events = await Event.find({}, "coverImage shortDescription scheduleItems.time");
+
+    res.status(200).json(events);
+  } catch (err) {
+    res.status(500).json({ 
+      message: "Error fetching events", 
+      error: err.message 
+    });
   }
 };

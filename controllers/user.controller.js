@@ -259,7 +259,7 @@ exports.getBookingDetails = async (req, res) => {
   try {
     const booking = await Booking.findOne({ 
       _id: req.params.id, 
-      email: req.user.email 
+      email: req.query.email || req.user.email 
     });
 
     if (!booking) {

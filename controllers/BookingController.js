@@ -37,17 +37,19 @@ const getMyPlans = async (req, res) => {
         }
 
         const bookings = await Booking.find({ email }).select(
-            "tripId title duration startDate endDate isPaymentUpdated tripType"
+            "tripId title duration startDate endDate isPaymentUpdated tripType _id requestStatus"
         ).sort({ updatedAt: -1 });
 
         const response = bookings.map(booking => ({
+            bookingId:booking._id,
             tripId: booking.tripId,
             title: booking.title || "",
             duration: booking.duration || "",
             startDate: booking.startDate || "",
             endDate: booking.endDate || "",
             paymentStatus: booking.isPaymentUpdated || false,
-            tripType: booking.tripType || "PACKAGE"
+            tripType: booking.tripType || "PACKAGE",
+            requestStatus: booking.requestStatus || "PENDING"
         }));
 
         res.status(200).json({ plans: response });
@@ -211,4 +213,26 @@ const getUserTripStatics = async (req, res) => {
     }
 };
 
-module.exports = { createBooking, getMyPlans, deleteByEmailAndTripId, getMyTrips, getPastTrips, getMyTripDetails, getTripHistoryDetails, getUserTripStatics };
+
+const getApprovedBookingIds = async (req, res) => {
+    const { email, tripId } = req.query;
+
+    if (!email || !tripId) {
+        return res.status(400).json({ message: "Email and TripId is required." });
+    }
+    try {
+        const booking = await Booking.findOne({ email, tripId });
+        if (!booking) {
+            return res.status(404).json({ message: "Trip history not found!" });
+        }
+        res.status(200).json({
+            phone: booking.phone || 0,
+            id: booking._id || ""
+        });
+    } catch (error) {
+        console.error("Error deleting booking:", error);
+        res.status(500).json({ message: "Server error." });
+    }
+}
+
+module.exports = { createBooking, getMyPlans, deleteByEmailAndTripId, getMyTrips, getPastTrips, getMyTripDetails, getTripHistoryDetails, getUserTripStatics,getApprovedBookingIds };

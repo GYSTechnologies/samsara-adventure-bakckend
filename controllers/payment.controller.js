@@ -246,10 +246,10 @@ function calculateRefund(startDateString, totalAmount) {
 // Cancel booking - only mark as cancellation requested
 exports.requestCancellation = async (req, res) => {
   try {
-    const { reason } = req.body;
+    const { reason } = req.body.reason;
     const bookingId = req.params.id;
-    const userEmail = req.user.email;
-
+    const userEmail = req.body.email || req.user.email;
+    
     // Find the booking
     const booking = await Booking.findOne({
       _id: bookingId,
@@ -265,21 +265,21 @@ exports.requestCancellation = async (req, res) => {
 
     // Check status
     if (booking.requestStatus === 'CANCELLATION_REQUESTED') {
-      return res.status(400).json({ 
+      return res.status(200).json({ 
         success: false,
         message: 'Cancellation already requested'
       });
     }
 
     if (booking.requestStatus === 'CANCELLED') {
-      return res.status(400).json({ 
+      return res.status(200).json({ 
         success: false,
         message: 'Booking already cancelled'
       });
     }
 
     if (booking.requestStatus === 'COMPLETED') {
-      return res.status(400).json({ 
+      return res.status(200).json({ 
         success: false,
         message: 'Completed bookings cannot be cancelled'
       });
