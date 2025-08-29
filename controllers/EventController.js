@@ -39,7 +39,7 @@ const getAllEvents = async (req, res) => {
         // Fetch paginated events
         const events = await EventModel
             .find()
-            .select("eventId title coverImage date")
+            .select("eventId title coverImage date location shortDescription price")
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit);
@@ -74,7 +74,7 @@ const getAllEventPageEvents = async (req, res) => {
         // Fetch paginated events
         const events = await EventModel
             .find(filter)
-            .select("eventId title coverImage date location price")
+            .select("eventId title coverImage date location price shortDescription")
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(parseInt(limit));

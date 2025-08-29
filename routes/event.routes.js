@@ -17,7 +17,7 @@ router.post('/create-order', protect, eventController.createEventBookingOrder);
 router.post('/verify-payment', protect, eventController.verifyPayment);
 
 router.post('/request-cancellation', protect, eventController.requestCancellation);
-router.get('/user/bookings', protect, eventController.getUserBookings);
+router.get('/user/bookings', eventController.getUserBookings);
 
 // Admin routes with dynamic image upload handling
 router.post('/', authMiddleware, dynamicUpload, eventController.createEvent);

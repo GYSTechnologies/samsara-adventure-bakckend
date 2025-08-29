@@ -37,7 +37,7 @@ const getMyPlans = async (req, res) => {
         }
 
         const bookings = await Booking.find({ email }).select(
-            "tripId title duration startDate endDate isPaymentUpdated tripType _id requestStatus"
+            "tripId title duration startDate endDate isPaymentUpdated tripType _id requestStatus image"
         ).sort({ updatedAt: -1 });
 
         const response = bookings.map(booking => ({
@@ -49,7 +49,8 @@ const getMyPlans = async (req, res) => {
             endDate: booking.endDate || "",
             paymentStatus: booking.isPaymentUpdated || false,
             tripType: booking.tripType || "PACKAGE",
-            requestStatus: booking.requestStatus || "PENDING"
+            requestStatus: booking.requestStatus || "PENDING",
+            image: booking.image
         }));
 
         res.status(200).json({ plans: response });
