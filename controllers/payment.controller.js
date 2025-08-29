@@ -7,6 +7,14 @@ const Booking = require("../models/BookingSchema");
 const Razorpay = require("razorpay");
 const crypto = require("crypto");
 
+
+const {
+  sendCancellationRequestUserEmail,
+  sendCancellationRequestAdminEmail,
+} = require("../config/email"); // ✅ yaha se import
+
+
+
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_KEY_SECRET,
@@ -102,7 +110,7 @@ exports.verifyPayment = async (req, res) => {
 
     // 2. Check if this is a custom trip with an existing enquiry
     let booking;
-    
+
     if (bookingData.enquiryId) {
       // ✅ THIS IS THE CRITICAL FIX: Update existing custom trip booking
       booking = await Booking.findByIdAndUpdate(
@@ -112,31 +120,45 @@ exports.verifyPayment = async (req, res) => {
           isPaymentPending: false,
           isPaymentUpdated: true,
           requestStatus: "PAID", // ✅ Change status to PAID
-          
+
           // Update payment details
           payment: {
-            subtotal: bookingData.tripDetails?.payment?.subTotal || bookingData.payment?.subtotal || 0,
-            taxation: bookingData.tripDetails?.payment?.taxation || bookingData.payment?.taxation || 0,
-            insurance: bookingData.tripDetails?.payment?.insurance || bookingData.payment?.insurance || 0,
-            activities: bookingData.tripDetails?.payment?.activities || bookingData.payment?.activities || 0,
-            grandTotal: bookingData.totalAmount || bookingData?.payment?.grandTotal || 0,
+            subtotal:
+              bookingData.tripDetails?.payment?.subTotal ||
+              bookingData.payment?.subtotal ||
+              0,
+            taxation:
+              bookingData.tripDetails?.payment?.taxation ||
+              bookingData.payment?.taxation ||
+              0,
+            insurance:
+              bookingData.tripDetails?.payment?.insurance ||
+              bookingData.payment?.insurance ||
+              0,
+            activities:
+              bookingData.tripDetails?.payment?.activities ||
+              bookingData.payment?.activities ||
+              0,
+            grandTotal:
+              bookingData.totalAmount || bookingData?.payment?.grandTotal || 0,
             transactionId: razorpay_payment_id,
             paymentDate: new Date().toISOString(),
             razorpay_payment_id,
             razorpay_order_id,
             razorpay_signature,
           },
-          
+
           // Add any missing fields that might be needed
           name: bookingData.fullName || bookingData.name || "Not specified",
           phone: bookingData.phone || "",
           adults: bookingData.adults || 0,
           childrens: bookingData.children || bookingData.childrens || 0,
-          total_members: (bookingData.adults || 0) + (bookingData.children || 0),
+          total_members:
+            (bookingData.adults || 0) + (bookingData.children || 0),
         },
         { new: true } // Return the updated document
       );
-      
+
       if (!booking) {
         throw new Error("Existing booking not found for custom trip");
       }
@@ -145,16 +167,32 @@ exports.verifyPayment = async (req, res) => {
       const bookingDoc = {
         email: bookingData.email,
         name: bookingData.fullName || bookingData.name || "Not specified",
-        title: bookingData.tripDetails?.title || bookingData.title || "Trip Booking",
-        duration: bookingData.tripDetails?.duration || bookingData.duration || "Not specified",
-        startDate: bookingData.tripDetails?.startDate || bookingData.startDate || new Date().toISOString(),
-        endDate: bookingData.tripDetails?.endDate || bookingData.endDate || new Date().toISOString(),
-        image: bookingData.tripDetails?.images?.[0] || bookingData.image || "default_image_url.jpg",
+        title:
+          bookingData.tripDetails?.title || bookingData.title || "Trip Booking",
+        duration:
+          bookingData.tripDetails?.duration ||
+          bookingData.duration ||
+          "Not specified",
+        startDate:
+          bookingData.tripDetails?.startDate ||
+          bookingData.startDate ||
+          new Date().toISOString(),
+        endDate:
+          bookingData.tripDetails?.endDate ||
+          bookingData.endDate ||
+          new Date().toISOString(),
+        image:
+          bookingData.tripDetails?.images?.[0] ||
+          bookingData.image ||
+          "default_image_url.jpg",
         tripId: bookingData.tripId,
         phone: bookingData.phone || "",
-        current_location: bookingData.pickupLocation || bookingData.current_location || "",
+        current_location:
+          bookingData.pickupLocation || bookingData.current_location || "",
         pickupLocation: bookingData.pickupAndDrop || "",
-        total_members: bookingData.total_members || (bookingData.adults || 0) + (bookingData.children || 0),
+        total_members:
+          bookingData.total_members ||
+          (bookingData.adults || 0) + (bookingData.children || 0),
         adults: bookingData.adults || 0,
         childrens: bookingData.children || bookingData.childrens || 0,
         tripType: bookingData.tripDetails?.tripType || "PACKAGE",
@@ -162,11 +200,24 @@ exports.verifyPayment = async (req, res) => {
         isPaymentUpdated: true,
         requestStatus: "PAID", // ✅ Set status to PAID for regular trips too
         payment: {
-          subtotal: bookingData.tripDetails?.payment?.subTotal || bookingData.payment?.subtotal || 0,
-          taxation: bookingData.tripDetails?.payment?.taxation || bookingData.payment?.taxation || 0,
-          insurance: bookingData.tripDetails?.payment?.insurance || bookingData.payment?.insurance || 0,
-          activities: bookingData.tripDetails?.payment?.activities || bookingData.payment?.activities || 0,
-          grandTotal: bookingData.totalAmount || bookingData?.payment?.grandTotal || 0,
+          subtotal:
+            bookingData.tripDetails?.payment?.subTotal ||
+            bookingData.payment?.subtotal ||
+            0,
+          taxation:
+            bookingData.tripDetails?.payment?.taxation ||
+            bookingData.payment?.taxation ||
+            0,
+          insurance:
+            bookingData.tripDetails?.payment?.insurance ||
+            bookingData.payment?.insurance ||
+            0,
+          activities:
+            bookingData.tripDetails?.payment?.activities ||
+            bookingData.payment?.activities ||
+            0,
+          grandTotal:
+            bookingData.totalAmount || bookingData?.payment?.grandTotal || 0,
           transactionId: razorpay_payment_id,
           paymentDate: new Date().toISOString(),
           razorpay_payment_id,
@@ -212,9 +263,6 @@ exports.verifyPayment = async (req, res) => {
   }
 };
 
-
-
-
 // Helper function to calculate refund
 function calculateRefund(startDateString, totalAmount) {
   if (!startDateString || !totalAmount) {
@@ -244,6 +292,89 @@ function calculateRefund(startDateString, totalAmount) {
 }
 
 // Cancel booking - only mark as cancellation requested
+// exports.requestCancellation = async (req, res) => {
+//   try {
+//     const { reason } = req.body;
+//     const bookingId = req.params.id;
+//     const userEmail = req.user.email;
+
+//     // Find the booking
+//     const booking = await Booking.findOne({
+//       _id: bookingId,
+//       email: userEmail,
+//     });
+
+//     if (!booking) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Booking not found",
+//       });
+//     }
+
+//     // Check status
+//     if (booking.requestStatus === "CANCELLATION_REQUESTED") {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Cancellation already requested",
+//       });
+//     }
+
+//     if (booking.requestStatus === "CANCELLED") {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Booking already cancelled",
+//       });
+//     }
+
+//     if (booking.requestStatus === "COMPLETED") {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Completed bookings cannot be cancelled",
+//       });
+//     }
+
+//     // Calculate potential refund
+//     const totalAmount = booking.payment?.grandTotal || 0;
+//     const { refundAmount, refundPercentage } = calculateRefund(
+//       booking.startDate,
+//       totalAmount
+//     );
+
+//     // Update booking to CANCELLATION_REQUESTED status (not cancelled yet)
+//     const updatedBooking = await Booking.findByIdAndUpdate(
+//       bookingId,
+//       {
+//         requestStatus: "CANCELLATION_REQUESTED",
+//         cancellationReason: reason,
+//         cancellationRequestDate: new Date(),
+//         "payment.potentialRefundAmount": refundAmount,
+//         "payment.potentialRefundPercentage": refundPercentage,
+//       },
+//       { new: true, runValidators: true }
+//     );
+
+//     res.status(200).json({
+//       success: true,
+//       message: "Cancellation requested. Waiting for admin approval.",
+//       // booking: updatedBooking,
+//       potentialRefund: {
+//         eligible: refundAmount > 0,
+//         amount: refundAmount,
+//         percentage: refundPercentage,
+//       },
+//     });
+//   } catch (error) {
+//     console.error("Cancel booking error:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: error.message || "Cancellation request failed",
+//       error: process.env.NODE_ENV === "development" ? error.stack : undefined,
+//     });
+//   }
+// };
+
+
+// Cancel booking - only mark as cancellation requested
 exports.requestCancellation = async (req, res) => {
   try {
     const { reason } = req.body;
@@ -253,99 +384,109 @@ exports.requestCancellation = async (req, res) => {
     // Find the booking
     const booking = await Booking.findOne({
       _id: bookingId,
-      email: userEmail
+      email: userEmail,
     });
 
     if (!booking) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         success: false,
-        message: 'Booking not found'
+        message: "Booking not found",
       });
     }
 
     // Check status
-    if (booking.requestStatus === 'CANCELLATION_REQUESTED') {
-      return res.status(400).json({ 
+    if (booking.requestStatus === "CANCELLATION_REQUESTED") {
+      return res.status(400).json({
         success: false,
-        message: 'Cancellation already requested'
+        message: "Cancellation already requested",
       });
     }
 
-    if (booking.requestStatus === 'CANCELLED') {
-      return res.status(400).json({ 
+    if (booking.requestStatus === "CANCELLED") {
+      return res.status(400).json({
         success: false,
-        message: 'Booking already cancelled'
+        message: "Booking already cancelled",
       });
     }
 
-    if (booking.requestStatus === 'COMPLETED') {
-      return res.status(400).json({ 
+    if (booking.requestStatus === "COMPLETED") {
+      return res.status(400).json({
         success: false,
-        message: 'Completed bookings cannot be cancelled'
+        message: "Completed bookings cannot be cancelled",
       });
     }
 
     // Calculate potential refund
     const totalAmount = booking.payment?.grandTotal || 0;
-    const { refundAmount, refundPercentage } = calculateRefund(booking.startDate, totalAmount);
+    const { refundAmount, refundPercentage } = calculateRefund(
+      booking.startDate,
+      totalAmount
+    );
 
     // Update booking to CANCELLATION_REQUESTED status (not cancelled yet)
     const updatedBooking = await Booking.findByIdAndUpdate(
       bookingId,
       {
-        requestStatus: 'CANCELLATION_REQUESTED',
+        requestStatus: "CANCELLATION_REQUESTED",
         cancellationReason: reason,
         cancellationRequestDate: new Date(),
-        'payment.potentialRefundAmount': refundAmount,
-        'payment.potentialRefundPercentage': refundPercentage
+        "payment.potentialRefundAmount": refundAmount,
+        "payment.potentialRefundPercentage": refundPercentage,
       },
       { new: true, runValidators: true }
     );
 
+    //  Send emails after update
+    try {
+      await sendCancellationRequestUserEmail(userEmail, updatedBooking, reason);
+      await sendCancellationRequestAdminEmail(updatedBooking, reason);
+    } catch (mailErr) {
+      console.error("Email sending error:", mailErr.message);
+
+    }
+
     res.status(200).json({
       success: true,
-      message: 'Cancellation requested. Waiting for admin approval.',
-      // booking: updatedBooking,
+      message: "Cancellation requested. Waiting for admin approval.",
       potentialRefund: {
         eligible: refundAmount > 0,
         amount: refundAmount,
-        percentage: refundPercentage
-      }
+        percentage: refundPercentage,
+      },
     });
-
   } catch (error) {
-    console.error('Cancel booking error:', error);
+    console.error("Cancel booking error:", error);
     res.status(500).json({
       success: false,
-      message: error.message || 'Cancellation request failed',
-      error: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      message: error.message || "Cancellation request failed",
+      error: process.env.NODE_ENV === "development" ? error.stack : undefined,
     });
   }
 };
 
 
-
-
-//ADMIN-SIDE 
-
+//ADMIN-SIDE
 
 // Get all cancellation requests
 exports.getCancellationRequests = async (req, res) => {
   try {
     const cancellationRequests = await Booking.find({
-      requestStatus: 'CANCELLATION_REQUESTED'
-    }).select('name email phone tripId title startDate endDate payment.grandTotal payment.potentialRefundAmount payment.potentialRefundPercentage cancellationReason cancellationRequestDate')
+      requestStatus: "CANCELLATION_REQUESTED",
+    })
+      .select(
+        "name email phone tripId title startDate endDate payment.grandTotal payment.potentialRefundAmount payment.potentialRefundPercentage cancellationReason cancellationRequestDate"
+      )
       .sort({ cancellationRequestDate: -1 });
 
     res.status(200).json({
       success: true,
-      requests: cancellationRequests
+      requests: cancellationRequests,
     });
   } catch (error) {
-    console.error('Error fetching cancellation requests:', error);
+    console.error("Error fetching cancellation requests:", error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch cancellation requests'
+      message: "Failed to fetch cancellation requests",
     });
   }
 };
@@ -354,16 +495,16 @@ exports.getCancellationRequests = async (req, res) => {
 exports.approveCancellation = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     const booking = await Booking.findOne({
       _id: id,
-      requestStatus: 'CANCELLATION_REQUESTED'
+      requestStatus: "CANCELLATION_REQUESTED",
     });
 
     if (!booking) {
       return res.status(404).json({
         success: false,
-        message: 'Cancellation request not found or already processed'
+        message: "Cancellation request not found or already processed",
       });
     }
 
@@ -373,55 +514,59 @@ exports.approveCancellation = async (req, res) => {
     const razorpayPaymentId = booking.payment?.razorpay_payment_id;
     const refundAmount = booking.payment?.potentialRefundAmount || 0;
 
+  
     if (refundAmount > 0 && razorpayPaymentId) {
       try {
         const payment = await razorpay.payments.fetch(razorpayPaymentId);
-        if (!payment) throw new Error('Payment not found');
-        if (payment.status !== 'captured') throw new Error(`Payment status: ${payment.status}`);
+        if (!payment) throw new Error("Payment not found");
+        if (payment.status !== "captured")
+          throw new Error(`Payment status: ${payment.status}`);
 
-        refundResponse = await razorpay.payments.refund({
-          payment_id: razorpayPaymentId,
-          amount: refundAmount * 100,
+        refundResponse = await razorpay.payments.refund(razorpayPaymentId, {
+          amount: refundAmount * 100, // amount in paise
           speed: "normal",
           notes: {
             reason: booking.cancellationReason,
-            booking_id: booking._id,
-            approved_by: req.user.email
-          }
+            booking_id: booking._id.toString(),
+            approved_by: req.user.email,
+          },
         });
       } catch (error) {
         refundError = {
           code: error.statusCode || 500,
           message: error.message,
-          razorpayError: error.error
+          razorpayError: error.error,
         };
-        console.error('Refund failed:', refundError);
+        console.error("Refund failed:", refundError);
       }
     }
 
-    // Update booking status
     const updatedBooking = await Booking.findByIdAndUpdate(
       id,
       {
-        requestStatus: 'CANCELLED',
+        requestStatus: "CANCELLED",
         cancellationApprovalDate: new Date(),
         cancelledBy: req.user.email,
-        'payment.refundAmount': refundAmount,
-        'payment.refundPercentage': booking.payment?.potentialRefundPercentage || 0,
-        'payment.refundId': refundResponse?.id,
-        'payment.refundStatus': refundResponse?.id ? 'PROCESSED' : 
-                               (refundAmount > 0 ? 'FAILED' : 'NOT_APPLICABLE'),
-        'payment.refundProcessedAt': refundResponse?.id ? new Date() : null,
-        'payment.refundError': refundError || null
+        "payment.refundAmount": refundAmount,
+        "payment.refundPercentage":
+          booking.payment?.potentialRefundPercentage || 0,
+        "payment.refundId": refundResponse?.id,
+        "payment.refundStatus": refundResponse?.id
+          ? "PROCESSED"
+          : refundAmount > 0
+          ? "FAILED"
+          : "NOT_APPLICABLE",
+        "payment.refundProcessedAt": refundResponse?.id ? new Date() : null,
+        "payment.refundError": refundError || null,
       },
       { new: true }
     );
 
     res.status(refundError ? 207 : 200).json({
       success: true,
-      message: refundError ? 
-        'Cancellation approved but refund failed' : 
-        'Cancellation approved and refund processed',
+      message: refundError
+        ? "Cancellation approved but refund failed"
+        : "Cancellation approved and refund processed",
       booking: updatedBooking,
       refund: {
         eligible: refundAmount > 0,
@@ -429,15 +574,14 @@ exports.approveCancellation = async (req, res) => {
         percentage: booking.payment?.potentialRefundPercentage || 0,
         processed: !!refundResponse?.id,
         razorpayRefundId: refundResponse?.id,
-        error: refundError || null
-      }
+        error: refundError || null,
+      },
     });
-
   } catch (error) {
-    console.error('Approve cancellation error:', error);
+    console.error("Approve cancellation error:", error);
     res.status(500).json({
       success: false,
-      message: error.message || 'Cancellation approval failed'
+      message: error.message || "Cancellation approval failed",
     });
   }
 };
@@ -451,15 +595,15 @@ exports.rejectCancellation = async (req, res) => {
     const booking = await Booking.findOneAndUpdate(
       {
         _id: id,
-        requestStatus: 'CANCELLATION_REQUESTED'
+        requestStatus: "CANCELLATION_REQUESTED",
       },
       {
-        requestStatus: 'APPROVED', // Change back to approved
+        requestStatus: "APPROVED", // Change back to approved
         cancellationRejectionReason: rejectionReason,
         cancellationRejectionDate: new Date(),
         rejectedBy: req.user.email,
-        'payment.potentialRefundAmount': 0,
-        'payment.potentialRefundPercentage': 0
+        "payment.potentialRefundAmount": 0,
+        "payment.potentialRefundPercentage": 0,
       },
       { new: true }
     );
@@ -467,21 +611,20 @@ exports.rejectCancellation = async (req, res) => {
     if (!booking) {
       return res.status(404).json({
         success: false,
-        message: 'Cancellation request not found'
+        message: "Cancellation request not found",
       });
     }
 
     res.status(200).json({
       success: true,
-      message: 'Cancellation request rejected',
-      booking
+      message: "Cancellation request rejected",
+      booking,
     });
-
   } catch (error) {
-    console.error('Reject cancellation error:', error);
+    console.error("Reject cancellation error:", error);
     res.status(500).json({
       success: false,
-      message: 'Failed to reject cancellation request'
+      message: "Failed to reject cancellation request",
     });
   }
 };

@@ -7,12 +7,16 @@ const parser = require('../middlewares/upload');
 const dynamicUpload = require('../middlewares/dynamicUpload');
 
 // Public routes
+
+router.get('/short', eventController.getCartEvent);
+
 router.get('/', eventController.getAllEvents);
 router.get('/:id', eventController.getEvent);
 
 // User routes (protected)
 router.post('/create-order', protect, eventController.createEventBookingOrder);
 router.post('/verify-payment', protect, eventController.verifyPayment);
+
 router.post('/request-cancellation', protect, eventController.requestCancellation);
 router.get('/user/bookings', protect, eventController.getUserBookings);
 
