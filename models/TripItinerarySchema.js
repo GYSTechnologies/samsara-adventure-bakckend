@@ -65,6 +65,7 @@ const TripItinerarySchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  // stateImage: String,
   category: [String],
   isSessional: {
     type: Boolean,

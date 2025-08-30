@@ -274,6 +274,23 @@ exports.getAllEvents = async (req, res) => {
   }
 };
 
+exports.getCartEvent = async (req, res) => {
+  try {
+    // only select required fields
+    const events = await Event.find(
+      {},
+      "coverImage shortDescription scheduleItems.time"
+    );
+
+    res.status(200).json(events);
+  } catch (err) {
+    res.status(500).json({
+      message: "Error fetching events",
+      error: err.message,
+    });
+  }
+};
+
 // Get single event (Public)
 exports.getEvent = async (req, res) => {
   try {
@@ -302,14 +319,12 @@ exports.deleteEvent = async (req, res) => {
 // Create Razorpay order for event booking
 exports.createEventBookingOrder = async (req, res) => {
   try {
-    // console.log("User in req:", req.user);
-    // console.log("Body received:", req.body);
 
-    const { eventId, tickets, contactInfo,userId } = req.body;
+    const { eventId, tickets, contactInfo } = req.body;
 
-    // if (!req.user) {
-    //   return res.status(401).json({ message: "User not authenticated" });
-    // }
+    if (!req.user) {
+      return res.status(401).json({ message: "User not authenticated" });
+    }
 
     const event = await Event.findById(eventId);
     if (!event) {
@@ -362,7 +377,7 @@ exports.createEventBookingOrder = async (req, res) => {
         receipt: shortReceipt, // <-- short receipt here
         notes: {
           eventId: eventId.toString(),
-          userId: userId || req.user._id.toString(),
+          userId: req.user._id.toString(),
           tickets: JSON.stringify(tickets),
           contactInfo: JSON.stringify(contactInfo),
         },
@@ -386,7 +401,7 @@ exports.createEventBookingOrder = async (req, res) => {
     // Create temporary booking with pending status
     const booking = new EventBooking({
       event: eventId,
-      user: userId || req.user._id,
+      user: req.user._id,
       tickets,
       totalAmount,
       contactInfo,
@@ -529,7 +544,7 @@ exports.requestCancellation = async (req, res) => {
       return res.status(404).json({ message: "Booking not found" });
     }
 
-    if (booking.user.toString() !== req.userId) {
+    if (booking.user.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: "Access denied" });
     }
 

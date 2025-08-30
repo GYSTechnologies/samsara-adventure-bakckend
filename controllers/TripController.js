@@ -54,7 +54,6 @@ const searchDestinations = async (req, res) => {
   }
 };
 
-
 // search Passengers
 const searchPassengers = async (req, res) => {
   try {
@@ -72,8 +71,8 @@ const searchPassengers = async (req, res) => {
         { name: searchRegex },
         { email: searchRegex },
         { phone: searchRegex },
-        { tripId: searchRegex }
-      ]
+        { tripId: searchRegex },
+      ],
     })
       .select("name email phone tripId")
       .limit(20);
@@ -86,8 +85,9 @@ const searchPassengers = async (req, res) => {
     const tripIds = [...new Set(passengers.map((b) => b.tripId))];
 
     // 3. Fetch trips by tripId (string field in TripItinerary)
-    const trips = await TripItineraryModel.find({ tripId: { $in: tripIds } })
-      .select("tripId title tripType");
+    const trips = await TripItineraryModel.find({
+      tripId: { $in: tripIds },
+    }).select("tripId title tripType");
 
     // 4. Map trips by tripId for quick lookup
     const tripMap = {};
@@ -103,7 +103,7 @@ const searchPassengers = async (req, res) => {
       phone: booking.phone,
       tripId: booking.tripId,
       tripTitle: tripMap[booking.tripId]?.title || "Unknown Trip",
-      tripType: tripMap[booking.tripId]?.tripType || "UNKNOWN"
+      tripType: tripMap[booking.tripId]?.tripType || "UNKNOWN",
     }));
 
     return res.status(200).json(results);
@@ -112,7 +112,6 @@ const searchPassengers = async (req, res) => {
     return res.status(500).json({ message: "Internal Server Error" });
   }
 };
-
 const createTrip = async (req, res) => {
   try {
     const {
@@ -191,6 +190,112 @@ const createTrip = async (req, res) => {
   }
 };
 
+// const createTrip = async (req, res) => {
+//   try {
+//     const {
+//       tripType,
+//       title,
+//       state,
+//       description,
+//       category,
+//       isSessional,
+//       overview,
+//       inclusions,
+//       exclusions,
+//       tags,
+//       activities,
+//       startDate,
+//       endDate,
+//       duration,
+//       payment,
+//       totalSeats,
+//       itinerary,
+//       pickupDropLocation,
+//       isActive,
+//       isNewState // Frontend will send this flag
+//     } = req.body;
+
+//     // Check if state already has an image
+//     const stateExists = await TripItineraryModel.findOne({
+//       state: state,
+//       stateImage: { $exists: true, $ne: "" }
+//     });
+
+//     // Parse arrays sent as strings
+//     const overviewArray = JSON.parse(overview);
+//     const inclusionsArray = JSON.parse(inclusions);
+//     const exclusionsArray = JSON.parse(exclusions);
+//     const activitiesArray = JSON.parse(activities);
+//     const paymentObj = JSON.parse(payment);
+//     const itineraryArray = JSON.parse(itinerary);
+
+//     // Map images from req.files
+//     const mainImages = (req.files["images"] || []).map((file) => file.path);
+    
+//     // Get state image ONLY if it's a new state and image is uploaded
+//     let stateImagePath = "";
+//     if ((isNewState === 'true' || !stateExists) && req.files["stateImage"] && req.files["stateImage"][0]) {
+//       stateImagePath = req.files["stateImage"][0].path;
+//     } else if (stateExists) {
+//       // Use existing state image if available
+//       stateImagePath = stateExists.stateImage;
+//     }
+
+//     const newTrip = new TripItineraryModel({
+//       tripType,
+//       title,
+//       state,
+//       stateImage: stateImagePath, // Add state image (could be empty)
+//       description,
+//       images: mainImages,
+//       overview: overviewArray,
+//       inclusions: inclusionsArray,
+//       exclusions: exclusionsArray,
+//       activities: activitiesArray,
+//       category: category,
+//       isSessional: isSessional,
+//       payment: paymentObj,
+//       totalSeats: totalSeats,
+//       startDate,
+//       endDate,
+//       duration,
+//       tags: tags,
+//       itinerary: itineraryArray,
+//       pickupDropLocation: pickupDropLocation,
+//       isActive: isActive,
+//     });
+
+//     const savedTrip = await newTrip.save();
+//     return res.status(201).json({ message: "Trip created successfully!" });
+//   } catch (error) {
+//     console.error(error);
+//     return res.status(400).json({
+//       success: 0,
+//       message: "Failed to create trip",
+//       error: error.message,
+//     });
+//   }
+// };
+
+//  Check if state already exists with an image
+// const checkState = async (req, res) => {
+//   try {
+//     const state = req.params.state;
+//     const existingTrip = await TripItineraryModel.findOne({
+//       state: state,
+//       stateImage: { $exists: true, $ne: "" }
+//     });
+
+//     return res.json({ 
+//       exists: !!existingTrip,
+//       stateImage: existingTrip ? existingTrip.stateImage : null 
+//     });
+//   } catch (error) {
+//     return res.status(500).json({ error: error.message });
+//   }
+// };
+
+
 const updateTripStatus = async (req, res) => {
   try {
     const { tripId } = req.params;
@@ -242,9 +347,9 @@ const getPackagesTrips = async (req, res) => {
           isActive: trip.isActive,
           grandTotal: trip.payment?.grandTotal || 0,
           enrolledCount,
-          images: trip.images || [], 
-          totalSeats:trip.totalSeats,
-          tripType:trip.tripType
+          images: trip.images || [],
+          totalSeats: trip.totalSeats,
+          tripType: trip.tripType,
         };
       })
     );
@@ -275,7 +380,7 @@ const getCustomizedTrips = async (req, res) => {
           tripId: trip.tripId,
         });
         return {
-          _id: trip._id, 
+          _id: trip._id,
           tripId: trip.tripId,
           title: trip.title,
           duration: trip.duration,
@@ -307,7 +412,9 @@ const getTripPassengers = async (req, res) => {
       .sort({ createdAt: -1 });
 
     if (!passengers || passengers.length === 0) {
-      return res.status(404).json({ message: "No passengers found for this trip" });
+      return res
+        .status(404)
+        .json({ message: "No passengers found for this trip" });
     }
 
     return res.status(200).json(passengers);
@@ -336,7 +443,9 @@ const getEnrolledUsers = async (req, res) => {
       name: booking.name || "N/A",
       email: booking.email || "N/A",
       paymentAmount: booking.payment?.grandTotal || 0,
-      paymentStatus: booking.payment?.razorpay_payment_id ? "completed" : "pending",
+      paymentStatus: booking.payment?.razorpay_payment_id
+        ? "completed"
+        : "pending",
       paymentDate: booking.payment?.paymentDate || booking.paymentDate || "N/A",
       bookingStatus: booking.requestStatus || "N/A",
     }));
@@ -435,7 +544,7 @@ const getTripById = async (req, res) => {
       pickupDropLocation: trip.pickupDropLocation,
       isActive: trip.isActive,
       images: trip.images || [],
-      existingImages: trip.images || [], 
+      existingImages: trip.images || [],
     };
 
     return res.status(200).json(responseData);
@@ -456,7 +565,7 @@ const updateTrip = async (req, res) => {
       return res.status(404).json({ message: "Trip not found" });
     }
 
-    // Extract all fields from request body (same as create)
+    // Extract all fields from request body
     const {
       tripType,
       title,
@@ -467,8 +576,8 @@ const updateTrip = async (req, res) => {
       overview,
       inclusions,
       exclusions,
-      tags,
       activities,
+      tags,
       startDate,
       endDate,
       duration,
@@ -477,9 +586,10 @@ const updateTrip = async (req, res) => {
       itinerary,
       pickupDropLocation,
       isActive,
+      existingImages, // This is now coming from the frontend
     } = req.body;
 
-    // Parse arrays sent as strings (same as create)
+    // Parse arrays sent as strings
     const overviewArray = overview
       ? JSON.parse(overview)
       : existingTrip.overview;
@@ -498,22 +608,33 @@ const updateTrip = async (req, res) => {
       : existingTrip.itinerary;
     const tagsArray = tags ? JSON.parse(tags) : existingTrip.tags;
 
-    // Handle images (existing + new)
-    let finalImages = existingTrip.images || [];
+    // Handle existing images - parse the string from frontend
+    let finalImages = [];
 
-    // Handle existing images selection from frontend
-    if (req.body.existingImages) {
-      const selectedExistingImages = JSON.parse(req.body.existingImages);
-      finalImages = selectedExistingImages;
+    if (existingImages) {
+      try {
+        const parsedExistingImages =
+          typeof existingImages === "string"
+            ? JSON.parse(existingImages)
+            : existingImages;
+        finalImages = [...parsedExistingImages];
+      } catch (parseError) {
+        console.error("Error parsing existingImages:", parseError);
+        finalImages = existingTrip.images || [];
+      }
+    } else {
+      finalImages = [...existingTrip.images];
     }
 
     // Add new uploaded images
-    if (req.files && req.files.length > 0) {
-      const newImages = req.files.map((file) => file.path || file.filename);
+    if (req.files) {
+      // Handle both single file and multiple files
+      const uploadedFiles = Array.isArray(req.files) ? req.files : [req.files];
+      const newImages = uploadedFiles.map((file) => file.path);
       finalImages = [...finalImages, ...newImages];
     }
 
-    // Remove image injection from itinerary (same as create)
+    // Remove image injection from itinerary
     const itineraryWithoutImages = itineraryArray.map((item) => ({
       dayNumber: item.dayNumber,
       title: item.title,
@@ -521,7 +642,7 @@ const updateTrip = async (req, res) => {
       points: item.points || [],
     }));
 
-    // Prepare update data (same structure as create)
+    // Prepare update data
     const updateData = {
       tripType: tripType || existingTrip.tripType,
       title: title || existingTrip.title,
@@ -543,7 +664,7 @@ const updateTrip = async (req, res) => {
       itinerary: itineraryWithoutImages,
       pickupDropLocation: pickupDropLocation || existingTrip.pickupDropLocation,
       isActive: isActive !== undefined ? isActive : existingTrip.isActive,
-      images: finalImages,
+      images: finalImages, // This now contains the correct combination
     };
 
     // Update the trip
@@ -565,7 +686,6 @@ const updateTrip = async (req, res) => {
     });
   }
 };
-
 
 const deleteTripById = async (req, res) => {
   const { tripId } = req.params;
@@ -1245,5 +1365,6 @@ module.exports = {
   getCustomizedTrips,
   getEnrolledUsers,
   getTripPassengers,
-  searchPassengers
+  searchPassengers,
+  // checkState,
 };
