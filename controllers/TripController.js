@@ -112,6 +112,85 @@ const searchPassengers = async (req, res) => {
     return res.status(500).json({ message: "Internal Server Error" });
   }
 };
+
+// const createTrip = async (req, res) => {
+//   try {
+//     const {
+//       tripType,
+//       title,
+//       state,
+//       description,
+//       category,
+//       isSessional, // sessional trip or not
+//       overview,
+//       inclusions,
+//       exclusions,
+//       tags,
+//       activities,
+//       startDate,
+//       endDate,
+//       duration,
+//       payment,
+//       totalSeats,
+//       itinerary,
+//       pickupDropLocation,
+//       isActive,
+//     } = req.body;
+
+//     // Parse arrays sent as strings
+//     const overviewArray = JSON.parse(overview);
+//     const inclusionsArray = JSON.parse(inclusions);
+//     const exclusionsArray = JSON.parse(exclusions);
+//     const activitiesArray = JSON.parse(activities);
+//     const paymentObj = JSON.parse(payment);
+//     const itineraryArray = JSON.parse(itinerary);
+
+//     // Map images from req.files
+//     const mainImages = (req.files["images"] || []).map((file) => file.path);
+
+//     // No image injection needed anymore
+//     const itineraryWithoutImages = itineraryArray.map((item) => ({
+//       ...item,
+//     }));
+
+//     const newTrip = new TripItineraryModel({
+//       tripType,
+//       title,
+//       state,
+//       description,
+//       images: mainImages,
+//       overview: overviewArray,
+//       inclusions: inclusionsArray,
+//       exclusions: exclusionsArray,
+//       activities: activitiesArray,
+//       category: category,
+//       isSessional: isSessional,
+//       payment: paymentObj,
+//       totalSeats: totalSeats,
+//       startDate,
+//       endDate,
+//       duration,
+//       tags: tags,
+//       itinerary: itineraryWithoutImages,
+//       pickupDropLocation: pickupDropLocation,
+//       isActive: isActive,
+//     });
+
+//     const savedTrip = await newTrip.save();
+
+//     return res.status(201).json({
+//       message: "Trip created successfully!",
+//     });
+//   } catch (error) {
+//     console.error(error);
+//     return res.status(400).json({
+//       success: 0,
+//       message: "Failed to create trip",
+//       error: error.message,
+//     });
+//   }
+// };
+
 const createTrip = async (req, res) => {
   try {
     const {
@@ -136,16 +215,25 @@ const createTrip = async (req, res) => {
       isActive,
     } = req.body;
 
-    // Parse arrays sent as strings
-    const overviewArray = JSON.parse(overview);
-    const inclusionsArray = JSON.parse(inclusions);
-    const exclusionsArray = JSON.parse(exclusions);
-    const activitiesArray = JSON.parse(activities);
-    const paymentObj = JSON.parse(payment);
-    const itineraryArray = JSON.parse(itinerary);
+    // Safe parse helper
+    const safeParse = (data, fallback) => {
+      try {
+        return data ? JSON.parse(data) : fallback;
+      } catch {
+        return fallback;
+      }
+    };
+
+    // Parse arrays sent as strings safely
+    const overviewArray = safeParse(overview, []);
+    const inclusionsArray = safeParse(inclusions, []);
+    const exclusionsArray = safeParse(exclusions, []);
+    const activitiesArray = safeParse(activities, []);
+    const paymentObj = safeParse(payment, {});
+    const itineraryArray = safeParse(itinerary, []);
 
     // Map images from req.files
-    const mainImages = (req.files["images"] || []).map((file) => file.path);
+    const mainImages = (req.files?.["images"] || []).map((file) => file.path);
 
     // No image injection needed anymore
     const itineraryWithoutImages = itineraryArray.map((item) => ({
@@ -158,24 +246,24 @@ const createTrip = async (req, res) => {
       state,
       description,
       images: mainImages,
-      overview: overviewArray,
+      overview: overviewArray, // ✅ will always be [] if not sent
       inclusions: inclusionsArray,
       exclusions: exclusionsArray,
       activities: activitiesArray,
-      category: category,
-      isSessional: isSessional,
+      category,
+      isSessional,
       payment: paymentObj,
-      totalSeats: totalSeats,
+      totalSeats,
       startDate,
       endDate,
       duration,
-      tags: tags,
+      tags,
       itinerary: itineraryWithoutImages,
-      pickupDropLocation: pickupDropLocation,
-      isActive: isActive,
+      pickupDropLocation,
+      isActive,
     });
 
-    const savedTrip = await newTrip.save();
+    await newTrip.save();
 
     return res.status(201).json({
       message: "Trip created successfully!",
@@ -189,112 +277,6 @@ const createTrip = async (req, res) => {
     });
   }
 };
-
-// const createTrip = async (req, res) => {
-//   try {
-//     const {
-//       tripType,
-//       title,
-//       state,
-//       description,
-//       category,
-//       isSessional,
-//       overview,
-//       inclusions,
-//       exclusions,
-//       tags,
-//       activities,
-//       startDate,
-//       endDate,
-//       duration,
-//       payment,
-//       totalSeats,
-//       itinerary,
-//       pickupDropLocation,
-//       isActive,
-//       isNewState // Frontend will send this flag
-//     } = req.body;
-
-//     // Check if state already has an image
-//     const stateExists = await TripItineraryModel.findOne({
-//       state: state,
-//       stateImage: { $exists: true, $ne: "" }
-//     });
-
-//     // Parse arrays sent as strings
-//     const overviewArray = JSON.parse(overview);
-//     const inclusionsArray = JSON.parse(inclusions);
-//     const exclusionsArray = JSON.parse(exclusions);
-//     const activitiesArray = JSON.parse(activities);
-//     const paymentObj = JSON.parse(payment);
-//     const itineraryArray = JSON.parse(itinerary);
-
-//     // Map images from req.files
-//     const mainImages = (req.files["images"] || []).map((file) => file.path);
-    
-//     // Get state image ONLY if it's a new state and image is uploaded
-//     let stateImagePath = "";
-//     if ((isNewState === 'true' || !stateExists) && req.files["stateImage"] && req.files["stateImage"][0]) {
-//       stateImagePath = req.files["stateImage"][0].path;
-//     } else if (stateExists) {
-//       // Use existing state image if available
-//       stateImagePath = stateExists.stateImage;
-//     }
-
-//     const newTrip = new TripItineraryModel({
-//       tripType,
-//       title,
-//       state,
-//       stateImage: stateImagePath, // Add state image (could be empty)
-//       description,
-//       images: mainImages,
-//       overview: overviewArray,
-//       inclusions: inclusionsArray,
-//       exclusions: exclusionsArray,
-//       activities: activitiesArray,
-//       category: category,
-//       isSessional: isSessional,
-//       payment: paymentObj,
-//       totalSeats: totalSeats,
-//       startDate,
-//       endDate,
-//       duration,
-//       tags: tags,
-//       itinerary: itineraryArray,
-//       pickupDropLocation: pickupDropLocation,
-//       isActive: isActive,
-//     });
-
-//     const savedTrip = await newTrip.save();
-//     return res.status(201).json({ message: "Trip created successfully!" });
-//   } catch (error) {
-//     console.error(error);
-//     return res.status(400).json({
-//       success: 0,
-//       message: "Failed to create trip",
-//       error: error.message,
-//     });
-//   }
-// };
-
-//  Check if state already exists with an image
-// const checkState = async (req, res) => {
-//   try {
-//     const state = req.params.state;
-//     const existingTrip = await TripItineraryModel.findOne({
-//       state: state,
-//       stateImage: { $exists: true, $ne: "" }
-//     });
-
-//     return res.json({ 
-//       exists: !!existingTrip,
-//       stateImage: existingTrip ? existingTrip.stateImage : null 
-//     });
-//   } catch (error) {
-//     return res.status(500).json({ error: error.message });
-//   }
-// };
-
 
 const updateTripStatus = async (req, res) => {
   try {
@@ -967,7 +949,7 @@ const getHomeTripDetails = async (req, res) => {
         isSessional: tripObj.isSessional,
         description: tripObj.description,
         tags: tripObj.tags,
-        duration: tripObj.duration
+        duration: tripObj.duration,
       };
     });
 
