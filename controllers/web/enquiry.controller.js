@@ -1,3 +1,4 @@
+const { sendCustomItineraryEmail } = require("../../config/email");
 const Booking = require("../../models/BookingSchema");
 const TripItinerary = require("../../models/TripItinerarySchema");
 
@@ -166,6 +167,8 @@ const createCustomItinerary = async (req, res) => {
       },
       { new: true }
     );
+
+await sendCustomItineraryEmail(updatedEnquiry.email, updatedEnquiry);
 
     res.status(200).json({
       message: "Custom itinerary saved successfully",
