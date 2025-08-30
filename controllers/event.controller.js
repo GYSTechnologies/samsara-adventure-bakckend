@@ -517,9 +517,8 @@ exports.verifyPayment = async (req, res) => {
 };
 
 exports.getUserBookings = async (req, res) => {
-  const { userId } = req.query
   try {
-    const bookings = await EventBooking.find({ user:  userId || req.user._id })
+    const bookings = await EventBooking.find({ user: req.user._id })
       .populate({
         path: "event",
         model: "Event",
