@@ -12,7 +12,8 @@ router.put("/profile/picture", protect, userController.updateProfilePicture);
 
 // -------------------- BOOKINGS --------------------
 router.get("/bookings", protect, userController.getUserBookings);
-router.get("/bookings/:id", protect, userController.getBookingDetails);
+// router.get("/bookings/:id", protect, userController.getBookingDetails);
+router.get("/bookings/:id", userController.getBookingDetails);
 // router.put("/bookings/:id/cancel", protect, userController.cancelBooking);
 
 router.get("/bookings/:id/itinerary", protect, userController.downloadItinerary);
@@ -22,7 +23,8 @@ router.get("/trips", userController.getAllTrips);
 router.get("/trips/:tripId", userController.getTripDetails);
 
 // -------------------- REFUND --------------------
-router.put('/bookings/:id/request-cancellation', protect, requestCancellation);
+// router.put('/bookings/:id/request-cancellation', protect, requestCancellation);
+router.put('/bookings/:id/request-cancellation', requestCancellation);
 
 
 module.exports = router;

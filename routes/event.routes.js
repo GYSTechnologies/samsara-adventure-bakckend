@@ -6,6 +6,8 @@ const { protect } = require('../middleware/authMiddleware');
 const parser = require('../middlewares/upload');
 const dynamicUpload = require('../middlewares/dynamicUpload');
 
+router.get('/short', eventController.getCartEvent);
+
 // Public routes
 
 router.get('/short', eventController.getCartEvent);
@@ -19,7 +21,6 @@ router.post('/verify-payment', protect, eventController.verifyPayment);
 
 router.post('/request-cancellation', protect, eventController.requestCancellation);
 router.get('/user/bookings', protect, eventController.getUserBookings);
-
 
 // Admin routes with dynamic image upload handling
 router.post('/', authMiddleware, dynamicUpload, eventController.createEvent);

@@ -228,11 +228,13 @@ const verifyEmail = async (req, res) => {
     return res.status(201).json({
       token,
       user: {
+        userId: newUser._id,
         name: newUser.name,
         email: newUser.email,
         userType: newUser.userType,
         profileUrl: newUser.profileUrl,
         phoneNumber: newUser.phoneNumber,
+        token:token
       },
     });
   } catch (error) {
@@ -335,11 +337,13 @@ const login = async (req, res, next) => {
   return res.status(200).json({
     token,
     user: {
+      userId: existUser._id,
       name: existUser.name,
       email: existUser.email,
       userType: existUser.userType,
       profileUrl: existUser.profileUrl,
       phoneNumber: existUser.phoneNumber,
+      token: token
     },
   });
 };
