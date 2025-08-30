@@ -265,21 +265,21 @@ exports.requestCancellation = async (req, res) => {
 
     // Check status
     if (booking.requestStatus === 'CANCELLATION_REQUESTED') {
-      return res.status(200).json({ 
+      return res.status(400).json({ 
         success: false,
         message: 'Cancellation already requested'
       });
     }
 
     if (booking.requestStatus === 'CANCELLED') {
-      return res.status(200).json({ 
+      return res.status(400).json({ 
         success: false,
         message: 'Booking already cancelled'
       });
     }
 
     if (booking.requestStatus === 'COMPLETED') {
-      return res.status(200).json({ 
+      return res.status(400).json({ 
         success: false,
         message: 'Completed bookings cannot be cancelled'
       });

@@ -302,14 +302,14 @@ exports.deleteEvent = async (req, res) => {
 // Create Razorpay order for event booking
 exports.createEventBookingOrder = async (req, res) => {
   try {
-    // console.log("User in req:", req.user);
-    // console.log("Body received:", req.body);
+    console.log("User in req:", req.user);
+    console.log("Body received:", req.body);
 
-    const { eventId, tickets, contactInfo,userId } = req.body;
+    const { eventId, tickets, contactInfo } = req.body;
 
-    // if (!req.user) {
-    //   return res.status(401).json({ message: "User not authenticated" });
-    // }
+    if (!req.user) {
+      return res.status(401).json({ message: "User not authenticated" });
+    }
 
     const event = await Event.findById(eventId);
     if (!event) {
@@ -362,7 +362,7 @@ exports.createEventBookingOrder = async (req, res) => {
         receipt: shortReceipt, // <-- short receipt here
         notes: {
           eventId: eventId.toString(),
-          userId: userId || req.user._id.toString(),
+          userId: req.user._id.toString(),
           tickets: JSON.stringify(tickets),
           contactInfo: JSON.stringify(contactInfo),
         },
@@ -386,7 +386,7 @@ exports.createEventBookingOrder = async (req, res) => {
     // Create temporary booking with pending status
     const booking = new EventBooking({
       event: eventId,
-      user: userId || req.user._id,
+      user: req.user._id,
       tickets,
       totalAmount,
       contactInfo,
