@@ -517,8 +517,9 @@ exports.verifyPayment = async (req, res) => {
 };
 
 exports.getUserBookings = async (req, res) => {
+  const { userId } = req.query
   try {
-    const bookings = await EventBooking.find({ user: req.user._id })
+    const bookings = await EventBooking.find({ user:  userId || req.user._id })
       .populate({
         path: "event",
         model: "Event",
@@ -661,5 +662,19 @@ exports.getAdminEvents = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+exports.getCartEvent = async (req, res) => {
+  try {
+    // only select required fields
+    const events = await Event.find({}, "coverImage shortDescription scheduleItems.time");
+
+    res.status(200).json(events);
+  } catch (err) {
+    res.status(500).json({ 
+      message: "Error fetching events", 
+      error: err.message 
+    });
   }
 };

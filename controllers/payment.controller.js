@@ -470,10 +470,10 @@ function calculateRefund(startDateString, totalAmount) {
 // Cancel booking - only mark as cancellation requested
 exports.requestCancellation = async (req, res) => {
   try {
-    const { reason } = req.body;
+    const { reason } = req.body.reason;
     const bookingId = req.params.id;
-    const userEmail = req.user.email;
-
+    const userEmail = req.body.email || req.user.email;
+    
     // Find the booking
     const booking = await Booking.findOne({
       _id: bookingId,

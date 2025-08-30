@@ -938,7 +938,7 @@ const getHomeTripDetails = async (req, res) => {
     // Fetch required fields only
     const trips = await TripItineraryModel.find(filter)
       .select(
-        "tripId title payment.actualPrice payment.subTotal images isSessional description tags state"
+        "tripId title payment.actualPrice payment.subTotal images isSessional description tags state duration"
       )
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -967,6 +967,7 @@ const getHomeTripDetails = async (req, res) => {
         isSessional: tripObj.isSessional,
         description: tripObj.description,
         tags: tripObj.tags,
+        duration: tripObj.duration
       };
     });
 

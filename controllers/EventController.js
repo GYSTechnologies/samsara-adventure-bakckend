@@ -1,4 +1,4 @@
-const EventModel = require('../models/EventSchema')
+const EventModel = require('../models/EventModel')
 
 const createEvent = async (req, res) => {
     try {
@@ -39,7 +39,7 @@ const getAllEvents = async (req, res) => {
         // Fetch paginated events
         const events = await EventModel
             .find()
-            .select("eventId title image date")
+            .select("eventId title coverImage date location shortDescription price")
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit);
@@ -74,23 +74,23 @@ const getAllEventPageEvents = async (req, res) => {
         // Fetch paginated events
         const events = await EventModel
             .find(filter)
-            .select("eventId title image date location price")
+            .select("eventId title coverImage date location price shortDescription")
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(parseInt(limit));
 
         // Remove duplicates by eventId
-        const uniqueEvents = [];
-        const seen = new Set();
+        // const uniqueEvents = [];
+        // const seen = new Set();
 
-        for (const event of events) {
-            if (!seen.has(event.eventId)) {
-                seen.add(event.eventId);
-                uniqueEvents.push(event);
-            }
-        }
+        // for (const event of events) {
+        //     if (!seen.has(event.eventId)) {
+        //         seen.add(event.eventId);
+        //         uniqueEvents.push(event);
+        //     }
+        // }
 
-        return res.status(200).json({ events: uniqueEvents });
+        return res.status(200).json({ events: events });
 
     } catch (err) {
         console.error("Error fetching events:", err);
@@ -102,7 +102,7 @@ const getAllEventPageEvents = async (req, res) => {
 const getEventByEventId = async (req, res) => {
     try {
         const { eventId } = req.query;
-        const event = await EventModel.findOne({ eventId }).select('-_id -__v -createdAt -updatedAt');
+        const event = await EventModel.findOne({ _id:eventId });
         if (!event) {
             return res.status(404).json({ message: "Event not found!" })
         }
