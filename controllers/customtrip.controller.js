@@ -1,3 +1,4 @@
+const { sendUserCustomTripEmail, sendAdminCustomTripEmail } = require("../config/email");
 const Booking = require("../models/BookingSchema");
 
 function getStatusMessage(status) {
@@ -7,7 +8,7 @@ function getStatusMessage(status) {
     REJECTED: "Your request has been rejected",
     COMPLETED: "Your trip has been completed",
     PAID: "Payment completed! View your plans", // ✅ Add this
-    CONFIRMED: "Booking confirmed! View your plans"
+    CONFIRMED: "Booking confirmed! View your plans",
   };
   return messages[status] || "Status unknown";
 }
@@ -23,7 +24,7 @@ exports.checkRequestStatus = async (req, res) => {
     const existingRequest = await Booking.findOne({
       email: email.toLowerCase().trim(),
       tripType: "CUSTOMIZED",
-      tripId: tripId.trim()
+      tripId: tripId.trim(),
     }).sort({ createdAt: -1 });
 
     if (!existingRequest) {
@@ -38,8 +39,9 @@ exports.checkRequestStatus = async (req, res) => {
       enquiryId: existingRequest._id,
       message: getStatusMessage(existingRequest.requestStatus),
       // Add this to help UI determine what to show
-      isPaid: existingRequest.requestStatus === "PAID" || 
-              existingRequest.requestStatus === "CONFIRMED"
+      isPaid:
+        existingRequest.requestStatus === "PAID" ||
+        existingRequest.requestStatus === "CONFIRMED",
     });
   } catch (error) {
     console.error("Error checking request status:", error);
@@ -83,33 +85,39 @@ exports.submitCustomRequest = async (req, res) => {
     }
 
     // Create new request
-    const newRequest = new Booking({
+     const newRequest = new Booking({
       ...formData,
       name: formData.fullName || "Not provided",
-      total_members: formData.adults + (formData.childrens||0),
+      total_members: formData.adults + (formData.childrens || 0),
       tripType: "CUSTOMIZED",
       requestStatus: "PENDING",
       bookedDate: new Date().toISOString(),
       changes: formData.specialRequests || "No special requests",
 
-
       iteneraryChanges: formData.iteneraryChanges || "Not provided",
       current_location: formData.pickupLocation || formData.current_location,
-      travelWithPet: formData.travelWithPet || false,
-      decoration: formData.decoration || false,
-      photograper: formData.photograper || false,
-      translator: formData.translator || false,
+
+      //  Force booleans
+      travelWithPet: formData.travelWithPet === true,
+      decoration: formData.decoration === true,
+      photographer: formData.photographer === true, 
+      translator: formData.translator === true,
+
       title: formData.title || "",
       startDate: formData.startDate || "",
       endDate: formData.endDate || "",
       image: formData.image || "",
       duration: formData.duration || "",
-      isPaymentPending: formData.isPaymentPending || true
-
+      isPaymentPending: formData.isPaymentPending !== false, // default true
     });
 
     await newRequest.save();
 
+        // Email send
+    await Promise.all([
+      sendAdminCustomTripEmail(formData),
+      sendUserCustomTripEmail(formData)
+    ]);
     res.json({
       success: true,
       requestId: newRequest._id,

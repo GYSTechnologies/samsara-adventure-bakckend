@@ -6,10 +6,11 @@ const {
   submitCustomRequest,
   updateRequest
 } = require("../controllers/customtrip.controller");
+const { protect } = require("../middleware/authMiddleware");
 
 // Public Routes
 router.get("/check-request-status", checkRequestStatus);
-router.post("/submit-custom-request", submitCustomRequest);
+router.post("/submit-custom-request",protect, submitCustomRequest);
 
 // Admin Routes
 // router.put("/update-request/:id", updateRequest);

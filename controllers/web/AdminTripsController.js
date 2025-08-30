@@ -109,50 +109,120 @@ const getPayments = async (req, res) => {
     }
 };
 
+// // GET payment-stats
+// const getPaymentStats = async (req, res) => {
+//     try {
+//         const bookings = await Booking.find({ isPaymentPending: false })
+//             .select("payment.grandTotal tripType");
+
+//         if (!bookings || bookings.length === 0) {
+//             return res.status(200).json({
+//                 totalRevenue: 0,
+//                 totalTransactions: 0,
+//                 packageRevenue: 0,
+//                 customRevenue: 0,
+//                 successfulPayments: 0,
+//                 failedPayments: 0
+//             });
+//         }
+
+//         const totalRevenue = bookings.reduce((sum, booking) => 
+//             sum + (booking.payment?.grandTotal || 0), 0);
+        
+//         const packageRevenue = bookings
+//             .filter(booking => booking.tripType === 'PACKAGE')
+//             .reduce((sum, booking) => sum + (booking.payment?.grandTotal || 0), 0);
+        
+//         const customRevenue = bookings
+//             .filter(booking => booking.tripType === 'CUSTOMIZED')
+//             .reduce((sum, booking) => sum + (booking.payment?.grandTotal || 0), 0);
+
+//         // Count successful vs failed payments
+//         const successfulPayments = bookings.filter(b => b.payment?.status === 'COMPLETED').length;
+//         const failedPayments = bookings.filter(b => b.payment?.status === 'FAILED').length;
+
+//         return res.status(200).json({
+//             totalRevenue,
+//             totalTransactions: bookings.length,
+//             packageRevenue,
+//             customRevenue,
+//             successfulPayments,
+//             failedPayments
+//         });
+//     } catch (error) {
+//         console.error("Error fetching payment statistics:", error);
+//         return res.status(500).json({ message: "Internal Server Error" });
+//     }
+// };
+
 // GET payment-stats
 const getPaymentStats = async (req, res) => {
-    try {
-        const bookings = await Booking.find({ isPaymentPending: false })
-            .select("payment.grandTotal tripType");
+  try {
+    // Fetch only necessary fields to keep memory usage low
+    const bookings = await Booking.find({ isPaymentPending: false }).select(
+      "payment.grandTotal payment.razorpay_payment_id payment.transactionId payment.status tripType"
+    );
 
-        if (!bookings || bookings.length === 0) {
-            return res.status(200).json({
-                totalRevenue: 0,
-                totalTransactions: 0,
-                packageRevenue: 0,
-                customRevenue: 0,
-                successfulPayments: 0,
-                failedPayments: 0
-            });
-        }
-
-        const totalRevenue = bookings.reduce((sum, booking) => 
-            sum + (booking.payment?.grandTotal || 0), 0);
-        
-        const packageRevenue = bookings
-            .filter(booking => booking.tripType === 'PACKAGE')
-            .reduce((sum, booking) => sum + (booking.payment?.grandTotal || 0), 0);
-        
-        const customRevenue = bookings
-            .filter(booking => booking.tripType === 'CUSTOMIZED')
-            .reduce((sum, booking) => sum + (booking.payment?.grandTotal || 0), 0);
-
-        // Count successful vs failed payments
-        const successfulPayments = bookings.filter(b => b.payment?.status === 'COMPLETED').length;
-        const failedPayments = bookings.filter(b => b.payment?.status === 'FAILED').length;
-
-        return res.status(200).json({
-            totalRevenue,
-            totalTransactions: bookings.length,
-            packageRevenue,
-            customRevenue,
-            successfulPayments,
-            failedPayments
-        });
-    } catch (error) {
-        console.error("Error fetching payment statistics:", error);
-        return res.status(500).json({ message: "Internal Server Error" });
+    if (!bookings || bookings.length === 0) {
+      return res.status(200).json({
+        totalRevenue: 0,
+        totalTransactions: 0,
+        packageRevenue: 0,
+        customRevenue: 0,
+        successfulPayments: 0,
+        failedPayments: 0,
+      });
     }
+
+    let totalRevenue = 0;
+    let packageRevenue = 0;
+    let customRevenue = 0;
+    let successfulPayments = 0;
+    let failedPayments = 0;
+
+    for (const b of bookings) {
+      const grand = Number(b.payment?.grandTotal ?? 0);
+      const tripType = (b.tripType || "").toString().toUpperCase();
+      const razorpayId = b.payment?.razorpay_payment_id;
+      const txId = b.payment?.transactionId;
+      const rawStatus = b.payment?.status;
+      const status = rawStatus ? rawStatus.toString().toUpperCase() : null;
+
+      // totals
+      totalRevenue += grand;
+      if (tripType === "PACKAGE") packageRevenue += grand;
+      if (tripType === "CUSTOMIZED") customRevenue += grand;
+
+      // Determine success/failed
+      if (status) {
+        if (status === "COMPLETED" || status === "SUCCESS" || status === "PAID") {
+          successfulPayments += 1;
+        } else if (status === "FAILED" || status === "DECLINED") {
+          failedPayments += 1;
+        } else {
+          // unknown explicit status -> fallback to ids
+          if (razorpayId || txId) successfulPayments += 1;
+          else failedPayments += 1;
+        }
+      } else {
+        // no explicit status -> use presence of transaction identifiers as success heuristic
+        if (razorpayId || txId) successfulPayments += 1;
+        else failedPayments += 1;
+      }
+    }
+
+    return res.status(200).json({
+      totalRevenue,
+      totalTransactions: bookings.length,
+      packageRevenue,
+      customRevenue,
+      successfulPayments,
+      failedPayments,
+    });
+  } catch (error) {
+    console.error("Error fetching payment statistics:", error);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
 };
 
 // GET payment-details

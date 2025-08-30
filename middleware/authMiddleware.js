@@ -10,10 +10,10 @@ const protect = asyncHandler(async (req, res, next) => {
     req.headers.authorization.startsWith("Bearer")
   ) {
     try {
-      // Token le lena
+      // Token 
       token = req.headers.authorization.split(" ")[1];
 
-      // Verify karna
+      // Verify 
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
       // User ko attach karna (password ke bina)

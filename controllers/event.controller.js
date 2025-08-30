@@ -274,6 +274,23 @@ exports.getAllEvents = async (req, res) => {
   }
 };
 
+exports.getCartEvent = async (req, res) => {
+  try {
+    // only select required fields
+    const events = await Event.find(
+      {},
+      "coverImage shortDescription scheduleItems.time"
+    );
+
+    res.status(200).json(events);
+  } catch (err) {
+    res.status(500).json({
+      message: "Error fetching events",
+      error: err.message,
+    });
+  }
+};
+
 // Get single event (Public)
 exports.getEvent = async (req, res) => {
   try {
@@ -302,8 +319,6 @@ exports.deleteEvent = async (req, res) => {
 // Create Razorpay order for event booking
 exports.createEventBookingOrder = async (req, res) => {
   try {
-    console.log("User in req:", req.user);
-    console.log("Body received:", req.body);
 
     const { eventId, tickets, contactInfo } = req.body;
 
@@ -502,9 +517,8 @@ exports.verifyPayment = async (req, res) => {
 };
 
 exports.getUserBookings = async (req, res) => {
-  const { userId } = req.query
   try {
-    const bookings = await EventBooking.find({ user:  userId || req.user._id })
+    const bookings = await EventBooking.find({ user: req.user._id })
       .populate({
         path: "event",
         model: "Event",
@@ -529,7 +543,7 @@ exports.requestCancellation = async (req, res) => {
       return res.status(404).json({ message: "Booking not found" });
     }
 
-    if (booking.user.toString() !== req.userId) {
+    if (booking.user.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: "Access denied" });
     }
 

@@ -33,6 +33,7 @@ const {
   getEnrolledUsers,
   getTripPassengers,
   searchPassengers,
+  // checkState
 } = require("../../controllers/TripController");
 const { createEvent } = require("../../controllers/EventController");
 
@@ -46,7 +47,11 @@ const {
 } = require("../../controllers/web/enquiry.controller");
 const { protect } = require("../../middleware/authMiddleware");
 
-const {getCancellationRequests,approveCancellation,rejectCancellation} = require("../../controllers/payment.controller.js") 
+const {
+  getCancellationRequests,
+  approveCancellation,
+  rejectCancellation,
+} = require("../../controllers/payment.controller.js");
 
 // --------------------ADMIN AUTH --------------------
 router.post("/signup", parser.single("profileImage"), adminSignup);
@@ -73,9 +78,17 @@ router.get("/refund-analytics", authMiddleware, getRefundAnalytics);
 
 // --------------------Payment Refund --------------------
 
-router.get('/cancellation-requests', authMiddleware, getCancellationRequests);
-router.put('/cancellation-requests/:id/approve', authMiddleware, approveCancellation);
-router.put('/cancellation-requests/:id/reject', authMiddleware, rejectCancellation);
+router.get("/cancellation-requests", authMiddleware, getCancellationRequests);
+router.put(
+  "/cancellation-requests/:id/approve",
+  authMiddleware,
+  approveCancellation
+);
+router.put(
+  "/cancellation-requests/:id/reject",
+  authMiddleware,
+  rejectCancellation
+);
 
 // --------------------Enquiries Routes --------------------
 // User gets their custom itinerary
@@ -96,11 +109,11 @@ router.post(
 router.get("/trip-detail/:tripId", authMiddleware, getTripDetailsById);
 
 // Add this route to your enquiryRoutes.js
-router.post(
-  "/enquiries/create-itinerary",
-  authMiddleware,
-  createCustomItinerary
-);
+// router.post(
+//   "/enquiries/create-itinerary",
+//   authMiddleware,
+//   createCustomItinerary
+// );
 
 // --------------------CREATE TRIP (Protected) --------------------
 router.post(
@@ -109,7 +122,35 @@ router.post(
   parser.fields([{ name: "images", maxCount: 3 }]),
   createTrip
 );
+// router.post(
+//   "/createTrip",
+//   authMiddleware,
+//   parser.fields([
+//     { name: "images", maxCount: 3 },
+//     { name: "stateImage", maxCount: 1 } // Add state image field
+//   ]),
+//   createTrip
+// );
 
+
+// Check if state already exists
+// router.get("/check-state/:state", authMiddleware, checkState);
+
+
+// // Check if state already exists
+// router.get("/check-state/:state", authMiddleware, async (req, res) => {
+//   try {
+//     const state = req.params.state;
+//     const existingTrip = await TripItineraryModel.findOne({ 
+//       state: state,
+//       stateImage: { $exists: true, $ne: "" } 
+//     });
+    
+//     return res.json({ exists: !!existingTrip });
+//   } catch (error) {
+//     return res.status(500).json({ error: error.message });
+//   }
+// });
 router.get("/search-passengers", authMiddleware, searchPassengers);
 
 router.get("/trip-passengers/:tripId", authMiddleware, getTripPassengers);
@@ -121,12 +162,13 @@ router.get("/trips/:id", authMiddleware, getTripById);
 // router.get("/trips/:identifier", authMiddleware, getTripById);
 
 router.get("/trips/:tripId/enrollments", getEnrolledUsers);
+
 router.put(
   "/updateTrip/:id",
   authMiddleware,
-  parser.fields([{ name: "images", maxCount: 3 }]),
+  parser.any(), // Allow any field including images
   updateTrip
-); // Max 3 images
+);
 
 // --------------------CREATE EVENT (Protected) --------------------
 router.post(

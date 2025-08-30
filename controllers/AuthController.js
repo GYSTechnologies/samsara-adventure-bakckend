@@ -1,11 +1,17 @@
+
+const dotenv = require('dotenv');
+dotenv.config();
+
 const bcrypt = require("bcrypt");
 const UserModel = require("../models/UserModel");
 const Booking = require("../models/BookingSchema");
 const FavoriteTrip = require("../models/FavoriteTripSchema");
 const nodemailer = require("nodemailer");
-const jwt = require("jsonwebtoken")
+const jwt = require("jsonwebtoken");
+const {OAuth2Client} = require("google-auth-library");
 const crypto = require("crypto");
 const cloudinary = require("../cloudinary");
+
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -19,27 +25,110 @@ let otpStore = {};
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+const googleAuth = async (req, res) => {
+  try {
+    const { token } = req.body;
+
+    // Verify token with Google
+    const ticket = await client.verifyIdToken({
+      idToken: token,
+      audience: process.env.GOOGLE_CLIENT_ID, // same as frontend clientId
+    });
+
+    const payload = ticket.getPayload();
+    const { sub, email, name, picture } = payload;
+
+    // check if user already exists
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      // create new user
+      user = await User.create({
+        name,
+        email,
+        profileUrl: picture,
+        userType: "user",
+        googleId: sub,
+      });
+    }
+
+    // generate JWT
+    const appToken = jwt.sign(
+      { id: user._id, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    return res.json({
+      success: true,
+      token: appToken,
+      user,
+    });
+  } catch (err) {
+    console.error("Google Auth Error:", err);
+    return res
+      .status(401)
+      .json({ success: false, message: "Invalid Google token" });
+  }
+};
+
+
 const signup = async (req, res, next) => {
-  const { name, email, password, userType, profileUrl, phoneNumber } = req.body;
-  let existUser;
   try {
-    existUser = await UserModel.findOne({ email });
-  } catch (e) {
-    return console.log(e);
-  }
-  if (existUser) {
-    return res.status(400).json({ message: "This email already exist!" });
-  }
+    const { name, email, password, userType, phoneNumber } = req.body;
 
-  const salt = await bcrypt.genSalt(10);
-  const hashedPassword = await bcrypt.hash(password, salt);
+    let profileUrlFromReq;
+    if (req.file) {
+      // Check if Cloudinary provided a secure_url
+      profileUrlFromReq = req.file.path || req.file.filename || req.file.secure_url || null;
+      
+      // If using Cloudinary, the URL should be in secure_url
+      if (req.file.secure_url) {
+        profileUrlFromReq = req.file.secure_url;
+      }
+    } else {
+      profileUrlFromReq = req.body.profileUrl; 
+    }
 
-  try {
+    const profileUrl =
+      typeof profileUrlFromReq === "string" && profileUrlFromReq.trim() !== ""
+        ? profileUrlFromReq.trim()
+        : "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+
+    
+
+    // Check if user already exists
+    let existUser;
+    try {
+      existUser = await UserModel.findOne({ email });
+    } catch (e) {
+      console.error("Error finding user:", e);
+      return res.status(500).json({ message: "Server error during signup" });
+    }
+    
+    if (existUser) {
+      return res.status(400).json({ message: "This email already exists!" });
+    }
+
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Generate OTP
     const otp = crypto.randomInt(1000, 9999);
 
+    // Send OTP email
+    // transporter.sendMail(
+    //   {
+    //     from: `"Samsara Adventure" <${process.env.EMAIL}>`,
+    //     to: email,
+    //     subject: "🔐 Email Verification - Your OTP Code",
+    //     html: `... your email template ...`,
+    //   },
 
-
-    transporter.sendMail(
+        transporter.sendMail(
       {
         from: `"Samsara Adventure" <${process.env.EMAIL}>`,
         to: email,
@@ -65,6 +154,8 @@ const signup = async (req, res, next) => {
                 </div>
             `,
       },
+
+
       (err, info) => {
         if (err) {
           console.error("Error sending OTP email:", err);
@@ -73,7 +164,7 @@ const signup = async (req, res, next) => {
       }
     );
 
-    // Store OTP and user data temporarily (in memory)
+    // Store OTP and user data temporarily
     otpStore[email] = {
       otp,
       user: {
@@ -81,13 +172,10 @@ const signup = async (req, res, next) => {
         email: email,
         password: hashedPassword,
         userType: userType,
-        profileUrl:
-          profileUrl && profileUrl.trim() !== ""
-            ? profileUrl
-            : "https://cdn-icons-png.flaticon.com/512/149/149071.png",
+        profileUrl,
         phoneNumber: phoneNumber,
       },
-      createdAt: Date.now(), // Timestamp for OTP expiration
+      createdAt: Date.now(),
     };
 
     return res
@@ -95,7 +183,7 @@ const signup = async (req, res, next) => {
       .json({ message: "OTP sent on your email, verify now" });
   } catch (e) {
     console.error("Error during registration:", e);
-    return res.status(500).json({ message: "Error occured while signup" });
+    return res.status(500).json({ message: "Error occurred while signup" });
   }
 };
 
@@ -104,17 +192,23 @@ const verifyEmail = async (req, res) => {
     const { email, otp } = req.body;
 
     if (!otpStore[email]) {
-      return res.status(400).json({ message: "No OTP request found for this email" });
+      return res
+        .status(400)
+        .json({ message: "No OTP request found for this email" });
     }
 
     const currentTime = Date.now();
     if (currentTime - otpStore[email].createdAt > 300000) {
       // delete otpStore[email];
-      return res.status(400).json({ message: "OTP has expired. Please click on resend." });
+      return res
+        .status(400)
+        .json({ message: "OTP has expired. Please click on resend." });
     }
 
     if (otpStore[email].otp != otp) {
-      return res.status(400).json({ message: "Invalid OTP. Please try again." });
+      return res
+        .status(400)
+        .json({ message: "Invalid OTP. Please try again." });
     }
 
     const newUser = new UserModel({
@@ -155,7 +249,12 @@ const resetOtp = async (req, res) => {
 
     // Check if signup started for this email
     if (!otpStore[email]) {
-      return res.status(400).json({ message: "No signup process found for this email. Please sign up first." });
+      return res
+        .status(400)
+        .json({
+          message:
+            "No signup process found for this email. Please sign up first.",
+        });
     }
 
     // Generate new OTP
@@ -200,13 +299,14 @@ const resetOtp = async (req, res) => {
     otpStore[email].otp = otp;
     otpStore[email].createdAt = Date.now();
 
-    return res.status(200).json({ message: "A new OTP has been sent to your email." });
+    return res
+      .status(200)
+      .json({ message: "A new OTP has been sent to your email." });
   } catch (error) {
     console.error("Error during OTP reset:", error);
     return res.status(500).json({ message: "Error while resetting OTP" });
   }
 };
-
 
 // Login with JWT
 const login = async (req, res, next) => {
@@ -253,14 +353,16 @@ const adminSignup = async (req, res) => {
   try {
     const { name, email, password, phoneNumber, userType } = req.body;
 
-    if (userType !== 'admin') {
-      return res.status(403).json({ message: 'Only admin signup allowed' });
+    if (userType !== "admin") {
+      return res.status(403).json({ message: "Only admin signup allowed" });
     }
 
     // check if admin already exists
-    const existingAdmin = await UserModel.findOne({ userType: 'admin' });
+    const existingAdmin = await UserModel.findOne({ userType: "admin" });
     if (existingAdmin) {
-      return res.status(400).json({ message: 'Admin already exists. Only one admin allowed.' });
+      return res
+        .status(400)
+        .json({ message: "Admin already exists. Only one admin allowed." });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -272,24 +374,24 @@ const adminSignup = async (req, res) => {
       name,
       email,
       password: hashedPassword,
-      userType: 'admin',
+      userType: "admin",
       phoneNumber,
-      profileUrl
+      profileUrl,
     });
 
     await newAdmin.save();
 
     res.status(201).json({
-      message: 'Admin registered successfully',
+      message: "Admin registered successfully",
       admin: {
         name: newAdmin.name,
         email: newAdmin.email,
         phoneNumber: newAdmin.phoneNumber,
-        profileUrl: newAdmin.profileUrl
-      }
+        profileUrl: newAdmin.profileUrl,
+      },
     });
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
@@ -298,25 +400,25 @@ const adminLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const admin = await UserModel.findOne({ email, userType: 'admin' });
+    const admin = await UserModel.findOne({ email, userType: "admin" });
     if (!admin) {
-      return res.status(404).json({ message: 'Admin not found' });
+      return res.status(404).json({ message: "Admin not found" });
     }
 
     const isPasswordValid = await bcrypt.compare(password, admin.password);
     if (!isPasswordValid) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
     // generate JWT
     const token = jwt.sign(
       { id: admin._id, email: admin.email, userType: admin.userType },
       process.env.JWT_SECRET,
-      { expiresIn: '1d' }
+      { expiresIn: "1d" }
     );
 
     res.status(200).json({
-      message: 'Login successful',
+      message: "Login successful",
       token,
       admin: {
         id: admin._id,
@@ -324,14 +426,13 @@ const adminLogin = async (req, res) => {
         email: admin.email,
         userType: admin.userType,
         profileUrl: admin.profileUrl,
-        phoneNumber: admin.phoneNumber
-      }
+        phoneNumber: admin.phoneNumber,
+      },
     });
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
-
 
 let otpForResetPassword = {};
 const sendOtpForResetPassword = async (req, res) => {
@@ -434,6 +535,8 @@ const verifyEmailForResetPassword = async (req, res) => {
     return res.status(500).json({ message: "Error during email verification" });
   }
 };
+
+
 const changePassword = async (req, res) => {
   const { email, oldPassword, newPassword } = req.body;
 
@@ -551,7 +654,7 @@ const deleteUser = async (req, res) => {
 
     if (activeBooking) {
       return res.status(400).json({
-        message: "User cannot be deleted because you have an active bookings."
+        message: "User cannot be deleted because you have an active bookings.",
       });
     }
 
@@ -567,7 +670,7 @@ const deleteUser = async (req, res) => {
 
     if (ongoingPackage) {
       return res.status(400).json({
-        message: "User cannot be deleted because they have an ongoing trips."
+        message: "User cannot be deleted because they have an ongoing trips.",
       });
     }
 
@@ -601,13 +704,11 @@ const deleteUser = async (req, res) => {
     return res
       .status(200)
       .json({ message: "User and related data deleted successfully." });
-
   } catch (error) {
     console.error("Error while deleting user:", error);
     return res.status(500).json({ message: "Error while deleting user!" });
   }
 };
-
 
 function extractPublicId(imageUrl) {
   try {
@@ -634,5 +735,6 @@ module.exports = {
   deleteUser,
   adminLogin,
   adminSignup,
-  resetOtp
+  resetOtp,
+  googleAuth,
 };

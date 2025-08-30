@@ -159,7 +159,7 @@ const BookingSchema = new mongoose.Schema(
   {
     email: { type: String, required: true },
     name: { type: String, required: false },
-    title: { type: String, required: false },
+    title: { type: String, required: true },
     duration: { type: String, required: false },
     startDate: { type: String, required: false },
     endDate: { type: String, required: false },

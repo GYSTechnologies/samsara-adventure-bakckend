@@ -9,6 +9,9 @@ const dynamicUpload = require('../middlewares/dynamicUpload');
 router.get('/short', eventController.getCartEvent);
 
 // Public routes
+
+router.get('/short', eventController.getCartEvent);
+
 router.get('/', eventController.getAllEvents);
 router.get('/:id', eventController.getEvent);
 

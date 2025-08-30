@@ -1,8 +1,9 @@
 const express = require('express')
 const router = express.Router()
 const parser = require('../middlewares/upload');
-const { signup, verifyEmail, login, changePassword, sendOtpForResetPassword, verifyEmailForResetPassword, resetPassword, updateProfile, deleteUser,resetOtp } = require('../controllers/AuthController')
+const { googleAuth, signup, verifyEmail, login, changePassword, sendOtpForResetPassword, verifyEmailForResetPassword, resetPassword, updateProfile, deleteUser,resetOtp } = require('../controllers/AuthController')
 
+router.post("/google", googleAuth);
 router.post('/signupUser',  parser.single('profileUrl'),signup);
 router.post("/verifyEmail", verifyEmail);
 router.post('/loginUser', login);
