@@ -37,6 +37,9 @@ const userRoutes = require("./routes/profile.routes");
 const adminRoutes = require("./routes/web/admin.routes");
 const eventRoutes = require("./routes/event.routes");
 
+const categoryRoute = require('./routes/new/home/CategoryRoute');
+const stateRoute = require('./routes/new/home/StateRoute');
+
 app.use("/api/auth", authRoute);
 app.use("/api/booking", bookRoute);
 app.use("/api/trip", tripRoute);
@@ -52,6 +55,10 @@ app.use("/", eventRoute);
 app.use("/api/payment", paymentRoute);
 app.use("/api/custom-trip", customRoutes);
 app.use("/api/users", userRoutes);
+
+// new Apis home
+app.use("/api/category", categoryRoute);
+app.use("/api/state", stateRoute);
 
 app.use("/", (req, res) => {
   res.send("Samsara Backend");
