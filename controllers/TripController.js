@@ -3,6 +3,7 @@ const FavoriteTripModel = require("../models/FavoriteTripSchema");
 const EventModel = require("../models/EventSchema");
 const cloudinary = require("../cloudinary");
 const Booking = require("../models/BookingSchema");
+const TripItinerarySchema = require("../models/TripItinerarySchema");
 // controllers/searchController.js
 
 //search  Destination
@@ -148,10 +149,14 @@ const searchPassengers = async (req, res) => {
 //     // Map images from req.files
 //     const mainImages = (req.files["images"] || []).map((file) => file.path);
 
-//     // No image injection needed anymore
-//     const itineraryWithoutImages = itineraryArray.map((item) => ({
-//       ...item,
-//     }));
+//     // Get state image ONLY if it's a new state and image is uploaded
+//     let stateImagePath = "";
+//     if ((isNewState === 'true' || !stateExists) && req.files["stateImage"] && req.files["stateImage"][0]) {
+//       stateImagePath = req.files["stateImage"][0].path;
+//     } else if (stateExists) {
+//       // Use existing state image if available
+//       stateImagePath = stateExists.stateImage;
+//     }
 
 //     const newTrip = new TripItineraryModel({
 //       tripType,
@@ -1327,6 +1332,108 @@ const getUpcommingTrips = async (req, res) => {
   }
 };
 
+// GET All Trips sorted by highest discount
+const getHomeRecommendedTrips = async (req, res) => {
+  try {
+    let { page = 1, limit = 10 } = req.query;
+    page = parseInt(page);
+    limit = parseInt(limit);
+    const skip = (page - 1) * limit;
+
+    // Fetch only PACKAGE trips with pagination
+    const trips = await TripItineraryModel.find(
+      { tripType: "PACKAGE" },
+      {
+        title: 1,
+        state: 1,
+        images: 1,
+        payment: 1,
+      }
+    )
+      .skip(skip)
+      .limit(limit)
+      .sort({ createdAt: -1 });
+
+    // Map to return only required fields
+    const tripsFiltered = trips.map((trip) => ({
+      title: trip.title,
+      state: trip.state,
+      image: trip.images && trip.images.length > 0 ? trip.images[0] : null, // first image
+      actualPrice: trip.payment?.actualPrice || 0,
+      subTotal: trip.payment?.subTotal || 0,
+    }));
+
+    // Total count for pagination
+    const totalRecords = await TripItineraryModel.countDocuments({ tripType: "PACKAGE" });
+    const totalPages = Math.ceil(totalRecords / limit);
+
+    res.status(200).json({
+      success: true,
+      page,
+      limit,
+      totalPages,
+      totalRecords,
+      count: tripsFiltered.length,
+      data: tripsFiltered,
+    });
+  } catch (error) {
+    console.error("Error fetching trips:", error);
+    res.status(500).json({ success: false, message: "Server Error" });
+  }
+};
+
+const getTripToExplore = async (req, res) => {
+  try {
+    let { page = 1, limit = 10 } = req.query;
+    page = parseInt(page);
+    limit = parseInt(limit);
+    const skip = (page - 1) * limit;
+
+    // Fetch trips with selected fields
+    const trips = await TripItineraryModel.find(
+      {}, // you can add filters if needed
+      {
+        tripType: 1,
+        tripId: 1,
+        title: 1,
+        activities: 1,
+        payment: 1,
+        images: 1,
+      }
+    )
+      .skip(skip)
+      .limit(limit)
+      .sort({ createdAt: -1 });
+
+    // Map to return only required fields
+    const tripsSummary = trips.map((trip) => ({
+      tripId: trip.tripId,
+      tripType: trip.tripType,
+      title: trip.title,
+      activities: trip.activities || [],
+      subTotal: trip.payment?.subTotal || 0,
+      image: trip.images && trip.images.length > 0 ? trip.images[0] : null,
+    }));
+
+    // Total count for pagination
+    const totalRecords = await TripItineraryModel.countDocuments({});
+    const totalPages = Math.ceil(totalRecords / limit);
+
+    res.status(200).json({
+      success: true,
+      page,
+      limit,
+      totalPages,
+      totalRecords,
+      count: tripsSummary.length,
+      data: tripsSummary,
+    });
+  } catch (error) {
+    console.error("Error fetching trips summary:", error);
+    res.status(500).json({ success: false, message: "Server Error" });
+  }
+};
+
 module.exports = {
   createTrip,
   searchDestinations,
@@ -1348,5 +1455,7 @@ module.exports = {
   getEnrolledUsers,
   getTripPassengers,
   searchPassengers,
+  getHomeRecommendedTrips,
+  getTripToExplore
   // checkState,
 };
