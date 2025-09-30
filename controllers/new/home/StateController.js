@@ -37,9 +37,36 @@ exports.createState = async (req, res) => {
 };
 
 // GET ALL States
+// exports.getAllStates = async (req, res) => {
+//     try {
+//         const states = await State.find().sort({ createdAt: -1 });
+
+//         res.status(200).json({
+//             success: true,
+//             count: states.length,
+//             data: states,
+//         });
+//     } catch (error) {
+//         console.error("Error fetching states:", error);
+//         res.status(500).json({ success: false, message: "Server Error" });
+//     }
+// };
 exports.getAllStates = async (req, res) => {
     try {
-        const states = await State.find().sort({ createdAt: -1 });
+        // page and limit from query params
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+
+        const skip = (page - 1) * limit;
+
+        // total documents count
+        const totalStates = await State.countDocuments();
+
+        // fetch only state and image fields
+        const states = await State.find({}, { state: 1, image: 1 })
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit);
 
         res.status(200).json({
             success: true,
@@ -135,9 +162,9 @@ exports.deleteState = async (req, res) => {
 function extractPublicId(imageUrl) {
     try {
         const urlParts = imageUrl.split("/");
-        const fileNameWithExt = urlParts[urlParts.length - 1]; 
-        const folder = urlParts[urlParts.length - 2]; 
-        const publicId = `${folder}/${fileNameWithExt.split(".")[0]}`; 
+        const fileNameWithExt = urlParts[urlParts.length - 1];
+        const folder = urlParts[urlParts.length - 2];
+        const publicId = `${folder}/${fileNameWithExt.split(".")[0]}`;
         return publicId;
     } catch (err) {
         console.error("Error extracting publicId:", err.message);
