@@ -51,6 +51,7 @@ exports.checkRequestStatus = async (req, res) => {
 
 //  Submit new custom trip request
 exports.submitCustomRequest = async (req, res) => {
+  console.log("HITTTING_SUB")
   try {
     const formData = req.body;
 
@@ -62,6 +63,7 @@ exports.submitCustomRequest = async (req, res) => {
       "startDate",
       "adults",
       "current_location", // Consistent naming
+      "persons"
     ];
 
     const missingFields = requiredFields.filter((field) => !formData[field]);
@@ -96,7 +98,7 @@ exports.submitCustomRequest = async (req, res) => {
 
       iteneraryChanges: formData.iteneraryChanges || "Not provided",
       current_location: formData.pickupLocation || formData.current_location,
-
+      persons: formData.persons,
       //  Force booleans
       travelWithPet: formData.travelWithPet === true,
       decoration: formData.decoration === true,

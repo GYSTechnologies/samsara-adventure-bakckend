@@ -40,11 +40,11 @@ function bookingConfirmationTemplate(booking) {
         <li><strong>Trip:</strong> ${booking.title}</li>
         <li><strong>Duration:</strong> ${booking.duration}</li>
         <li><strong>Start Date:</strong> ${new Date(
-          booking.startDate
-        ).toDateString()}</li>
+    booking.startDate
+  ).toDateString()}</li>
         <li><strong>End Date:</strong> ${new Date(
-          booking.endDate
-        ).toDateString()}</li>
+    booking.endDate
+  ).toDateString()}</li>
         <li><strong>Adults:</strong> ${booking.adults}</li>
         <li><strong>Children:</strong> ${booking.childrens}</li>
         <li><strong>Total Members:</strong> ${booking.total_members}</li>
@@ -53,12 +53,11 @@ function bookingConfirmationTemplate(booking) {
       <h3>Payment Summary</h3>
       <ul>
         <li><strong>Grand Total:</strong> ₹${booking.payment.grandTotal}</li>
-        <li><strong>Transaction ID:</strong> ${
-          booking.payment.transactionId
-        }</li>
+        <li><strong>Transaction ID:</strong> ${booking.payment.transactionId
+    }</li>
         <li><strong>Payment Date:</strong> ${new Date(
-          booking.payment.paymentDate
-        ).toLocaleString()}</li>
+      booking.payment.paymentDate
+    ).toLocaleString()}</li>
       </ul>
 
       <p>We look forward to seeing you on this adventure! 🌍</p>
@@ -355,6 +354,7 @@ exports.verifyPayment = async (req, res) => {
       // Create booking
       const bookingDoc = {
         email: bookingData.email,
+        persons: bookingData.persons || [],
         name: bookingData.fullName || bookingData.name || "Not specified",
         title:
           bookingData.tripDetails?.title || bookingData.title || "Trip Booking",
@@ -473,7 +473,7 @@ exports.requestCancellation = async (req, res) => {
     const { reason } = req.body.reason;
     const bookingId = req.params.id;
     const userEmail = req.body.email || req.user.email;
-    
+
     // Find the booking
     const booking = await Booking.findOne({
       _id: bookingId,
@@ -489,21 +489,21 @@ exports.requestCancellation = async (req, res) => {
 
     // Check status
     if (booking.requestStatus === 'CANCELLATION_REQUESTED') {
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
         message: "Cancellation already requested",
       });
     }
 
     if (booking.requestStatus === 'CANCELLED') {
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
         message: "Booking already cancelled",
       });
     }
 
     if (booking.requestStatus === 'COMPLETED') {
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
         message: "Completed bookings cannot be cancelled",
       });
@@ -739,8 +739,8 @@ exports.approveCancellation = async (req, res) => {
         "payment.refundStatus": refundResponse?.id
           ? "PROCESSED"
           : refundAmount > 0
-          ? "FAILED"
-          : "NOT_APPLICABLE",
+            ? "FAILED"
+            : "NOT_APPLICABLE",
         "payment.refundProcessedAt": refundResponse?.id ? new Date() : null,
         "payment.refundError": refundError || null,
       },
