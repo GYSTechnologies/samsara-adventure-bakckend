@@ -155,6 +155,11 @@ const customItinerarySchema = new mongoose.Schema(
   { _id: false }
 );
 
+const personSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  age: { type: Number, required: true }
+});
+
 const BookingSchema = new mongoose.Schema(
   {
     email: { type: String, required: true },
@@ -167,7 +172,7 @@ const BookingSchema = new mongoose.Schema(
 
     hasCustomItinerary: { type: Boolean, default: false },
     customItinerary: { type: customItinerarySchema },
-
+    persons: { type: [personSchema], required: true },
     phone: { type: String, required: false },
     current_location: { type: String, required: false },
     total_members: { type: Number, required: false },

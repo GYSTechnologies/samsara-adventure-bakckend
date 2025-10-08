@@ -1348,6 +1348,8 @@ const getHomeRecommendedTrips = async (req, res) => {
         state: 1,
         images: 1,
         payment: 1,
+        tripType: 1,
+        tripId: 1,
       }
     )
       .skip(skip)
@@ -1361,6 +1363,8 @@ const getHomeRecommendedTrips = async (req, res) => {
       image: trip.images && trip.images.length > 0 ? trip.images[0] : null, // first image
       actualPrice: trip.payment?.actualPrice || 0,
       subTotal: trip.payment?.subTotal || 0,
+      tripId: trip.tripId,
+      tripType: trip.tripType,
     }));
 
     // Total count for pagination
@@ -1382,59 +1386,7 @@ const getHomeRecommendedTrips = async (req, res) => {
   }
 };
 
-// const getTripToExplore = async (req, res) => {
-//   try {
-//     let { page = 1, limit = 10 } = req.query;
-//     page = parseInt(page);
-//     limit = parseInt(limit);
-//     const skip = (page - 1) * limit;
 
-//     // Fetch trips with selected fields
-//     const trips = await TripItineraryModel.find(
-//       {}, // you can add filters if needed
-//       {
-//         tripType: 1,
-//         tripId: 1,
-//         title: 1,
-//         activities: 1,
-//         payment: 1,
-//         images: 1,
-//         duration: 1
-//       }
-//     )
-//       .skip(skip)
-//       .limit(limit)
-//       .sort({ createdAt: -1 });
-
-//     // Map to return only required fields
-//     const tripsSummary = trips.map((trip) => ({
-//       tripId: trip.tripId,
-//       tripType: trip.tripType,
-//       title: trip.title,
-//       activities: trip.activities || [],
-//       subTotal: trip.payment?.subTotal || 0,
-//       duration: trip.duration,
-//       image: trip.images && trip.images.length > 0 ? trip.images[0] : null,
-//     }));
-
-//     // Total count for pagination
-//     const totalRecords = await TripItineraryModel.countDocuments({});
-//     const totalPages = Math.ceil(totalRecords / limit);
-
-//     res.status(200).json({
-//       success: true,
-//       page,
-//       limit,
-//       totalPages,
-//       totalRecords,
-//       count: tripsSummary.length,
-//       data: tripsSummary,
-//     });
-//   } catch (error) {
-//     console.error("Error fetching trips summary:", error);
-//     res.status(500).json({ success: false, message: "Server Error" });
-//   }
-// };
 const getTripToExplore = async (req, res) => {
   try {
     let { page = 1, limit = 10, email } = req.query;
@@ -1459,9 +1411,8 @@ const getTripToExplore = async (req, res) => {
       .limit(limit)
       .sort({ createdAt: -1 });
 
-    // Get favorites if email is provided
     let favoriteTripIdsSet = new Set();
-    if (email) {
+    if (email && email.trim() !== "") {
       const favorites = await FavoriteTripModel.find({ email }).select(
         "tripId -_id"
       );
@@ -1564,6 +1515,53 @@ const getHomeStateTrips = async (req, res) => {
   }
 };
 
+const getMyTripHistory = async (req, res) => {
+  try {
+    const { email } = req.query;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is required",
+      });
+    }
+
+    // Fetch all bookings for the user
+    const bookings = await Booking.find({ email }).select(
+      "image title startDate endDate tripId tripType requestStatus"
+    ).sort({ createdAt: -1 });
+
+    // Categorize bookings
+    const upcomingPlans = bookings.filter((b) =>
+      ["APPROVED", "PAID", "CANCELLATION_REQUESTED","PENDING"].includes(b.requestStatus)
+    );
+
+    const completedPlans = bookings.filter(
+      (b) => b.requestStatus === "COMPLETED"
+    );
+
+    const cancelledPlans = bookings.filter(
+      (b) => b.requestStatus === "CANCELLED"
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Plans fetched successfully",
+      upcomingPlans,
+      completedPlans,
+      cancelledPlans,
+    });
+  } catch (error) {
+    console.error("Error in getMyPlans:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while fetching plans",
+      error: error.message,
+    });
+  }
+};
+
+
 
 module.exports = {
   createTrip,
@@ -1588,6 +1586,7 @@ module.exports = {
   searchPassengers,
   getHomeRecommendedTrips,
   getTripToExplore,
-  getHomeStateTrips
+  getHomeStateTrips,
+  getMyTripHistory
   // checkState,
 };

@@ -10,7 +10,7 @@ const { protect } = require("../middleware/authMiddleware");
 
 // Public Routes
 router.get("/check-request-status", checkRequestStatus);
-router.post("/submit-custom-request",protect, submitCustomRequest);
+router.post("/submit-custom-request", submitCustomRequest);
 
 // Admin Routes
 // router.put("/update-request/:id", updateRequest);
