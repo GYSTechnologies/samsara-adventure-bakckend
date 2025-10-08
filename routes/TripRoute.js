@@ -2,7 +2,7 @@ const express = require('express')
 const router = express.Router();
 const parser = require('../middlewares/upload');
 
-const { createTrip, getAllTrips, getTripsByFilter, getHomeTripDetails, getStateTrips, getTripsByState, getPlanYourOwnTrips, getUpcommingTrips, getTripDetailsById, deleteTripById, searchDestinations, getHomeRecommendedTrips, getTripToExplore,getHomeStateTrips } = require('../controllers/TripController')
+const { createTrip, getAllTrips, getTripsByFilter, getHomeTripDetails, getStateTrips, getTripsByState, getPlanYourOwnTrips, getUpcommingTrips, getTripDetailsById, deleteTripById, searchDestinations, getHomeRecommendedTrips, getTripToExplore, getHomeStateTrips, getMyTripHistory } = require('../controllers/TripController')
 router.post('/createTrip', parser.fields([
     { name: 'images', maxCount: 5 }
 ]), createTrip);
@@ -21,6 +21,7 @@ router.delete('/deleteTripById/:tripId', deleteTripById);
 // New APIs
 router.get('/getHomeRecommendedTrips', getHomeRecommendedTrips);
 router.get('/getTripToExplore', getTripToExplore);
-router.get('/getHomeStateTrips',getHomeStateTrips);
+router.get('/getHomeStateTrips', getHomeStateTrips);
 
+router.get('/getMyTripHistory',getMyTripHistory);
 module.exports = router;

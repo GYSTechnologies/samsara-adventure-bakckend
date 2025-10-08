@@ -1515,6 +1515,53 @@ const getHomeStateTrips = async (req, res) => {
   }
 };
 
+const getMyTripHistory = async (req, res) => {
+  try {
+    const { email } = req.query;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is required",
+      });
+    }
+
+    // Fetch all bookings for the user
+    const bookings = await Booking.find({ email }).select(
+      "image title startDate endDate tripId tripType requestStatus"
+    ).sort({ createdAt: -1 });
+
+    // Categorize bookings
+    const upcomingPlans = bookings.filter((b) =>
+      ["APPROVED", "PAID", "CANCELLATION_REQUESTED","PENDING"].includes(b.requestStatus)
+    );
+
+    const completedPlans = bookings.filter(
+      (b) => b.requestStatus === "COMPLETED"
+    );
+
+    const cancelledPlans = bookings.filter(
+      (b) => b.requestStatus === "CANCELLED"
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Plans fetched successfully",
+      upcomingPlans,
+      completedPlans,
+      cancelledPlans,
+    });
+  } catch (error) {
+    console.error("Error in getMyPlans:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while fetching plans",
+      error: error.message,
+    });
+  }
+};
+
+
 
 module.exports = {
   createTrip,
@@ -1539,6 +1586,7 @@ module.exports = {
   searchPassengers,
   getHomeRecommendedTrips,
   getTripToExplore,
-  getHomeStateTrips
+  getHomeStateTrips,
+  getMyTripHistory
   // checkState,
 };
