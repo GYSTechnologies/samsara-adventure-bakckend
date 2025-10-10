@@ -1533,7 +1533,7 @@ const getMyTripHistory = async (req, res) => {
 
     // Categorize bookings
     const upcomingPlans = bookings.filter((b) =>
-      ["APPROVED", "PAID", "CANCELLATION_REQUESTED","PENDING"].includes(b.requestStatus)
+      ["APPROVED", "PAID", "CANCELLATION_REQUESTED", "PENDING"].includes(b.requestStatus)
     );
 
     const completedPlans = bookings.filter(
@@ -1541,7 +1541,7 @@ const getMyTripHistory = async (req, res) => {
     );
 
     const cancelledPlans = bookings.filter(
-      (b) => b.requestStatus === "CANCELLED"
+      (b) => ["CANCELLED", "REJECTED"].includes(b.requestStatus)
     );
 
     res.status(200).json({
