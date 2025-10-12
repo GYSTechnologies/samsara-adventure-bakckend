@@ -82,184 +82,6 @@ exports.createOrder = async (req, res) => {
   }
 };
 
-//old booking data...
-// exports.verifyPayment = async (req, res) => {
-//   const {
-//     razorpay_payment_id,
-//     razorpay_order_id,
-//     razorpay_signature,
-//     bookingData,
-//   } = req.body;
-
-//   try {
-//     // 1. Verify Razorpay signature
-//     const generatedSignature = crypto
-//       .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
-//       .update(`${razorpay_order_id}|${razorpay_payment_id}`)
-//       .digest("hex");
-
-//     if (generatedSignature !== razorpay_signature) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Invalid payment signature",
-//       });
-//     }
-
-//     // 2. Check if this is a custom trip with an existing enquiry
-//     let booking;
-
-//     if (bookingData.enquiryId) {
-//       // ✅ THIS IS THE CRITICAL FIX: Update existing custom trip booking
-//       booking = await Booking.findByIdAndUpdate(
-//         bookingData.enquiryId,
-//         {
-//           // Update payment status
-//           isPaymentPending: false,
-//           isPaymentUpdated: true,
-//           requestStatus: "PAID", // ✅ Change status to PAID
-
-//           // Update payment details
-//           payment: {
-//             subtotal:
-//               bookingData.tripDetails?.payment?.subTotal ||
-//               bookingData.payment?.subtotal ||
-//               0,
-//             taxation:
-//               bookingData.tripDetails?.payment?.taxation ||
-//               bookingData.payment?.taxation ||
-//               0,
-//             insurance:
-//               bookingData.tripDetails?.payment?.insurance ||
-//               bookingData.payment?.insurance ||
-//               0,
-//             activities:
-//               bookingData.tripDetails?.payment?.activities ||
-//               bookingData.payment?.activities ||
-//               0,
-//             grandTotal:
-//               bookingData.totalAmount || bookingData?.payment?.grandTotal || 0,
-//             transactionId: razorpay_payment_id,
-//             paymentDate: new Date().toISOString(),
-//             razorpay_payment_id,
-//             razorpay_order_id,
-//             razorpay_signature,
-//           },
-
-//           // Add any missing fields that might be needed
-//           name: bookingData.fullName || bookingData.name || "Not specified",
-//           phone: bookingData.phone || "",
-//           adults: bookingData.adults || 0,
-//           childrens: bookingData.children || bookingData.childrens || 0,
-//           total_members:
-//             (bookingData.adults || 0) + (bookingData.children || 0),
-//         },
-//         { new: true } // Return the updated document
-//       );
-
-//       if (!booking) {
-//         throw new Error("Existing booking not found for custom trip");
-//       }
-//     } else {
-//       // 3. For regular trips, create a new booking document
-//       const bookingDoc = {
-//         email: bookingData.email,
-//         name: bookingData.fullName || bookingData.name || "Not specified",
-//         title:
-//           bookingData.tripDetails?.title || bookingData.title || "Trip Booking",
-//         duration:
-//           bookingData.tripDetails?.duration ||
-//           bookingData.duration ||
-//           "Not specified",
-//         startDate:
-//           bookingData.tripDetails?.startDate ||
-//           bookingData.startDate ||
-//           new Date().toISOString(),
-//         endDate:
-//           bookingData.tripDetails?.endDate ||
-//           bookingData.endDate ||
-//           new Date().toISOString(),
-//         image:
-//           bookingData.tripDetails?.images?.[0] ||
-//           bookingData.image ||
-//           "default_image_url.jpg",
-//         tripId: bookingData.tripId,
-//         phone: bookingData.phone || "",
-//         current_location:
-//           bookingData.pickupLocation || bookingData.current_location || "",
-//         pickupLocation: bookingData.pickupAndDrop || "",
-//         total_members:
-//           bookingData.total_members ||
-//           (bookingData.adults || 0) + (bookingData.children || 0),
-//         adults: bookingData.adults || 0,
-//         childrens: bookingData.children || bookingData.childrens || 0,
-//         tripType: bookingData.tripDetails?.tripType || "PACKAGE",
-//         isPaymentPending: false,
-//         isPaymentUpdated: true,
-//         requestStatus: "PAID", // ✅ Set status to PAID for regular trips too
-//         payment: {
-//           subtotal:
-//             bookingData.tripDetails?.payment?.subTotal ||
-//             bookingData.payment?.subtotal ||
-//             0,
-//           taxation:
-//             bookingData.tripDetails?.payment?.taxation ||
-//             bookingData.payment?.taxation ||
-//             0,
-//           insurance:
-//             bookingData.tripDetails?.payment?.insurance ||
-//             bookingData.payment?.insurance ||
-//             0,
-//           activities:
-//             bookingData.tripDetails?.payment?.activities ||
-//             bookingData.payment?.activities ||
-//             0,
-//           grandTotal:
-//             bookingData.totalAmount || bookingData?.payment?.grandTotal || 0,
-//           transactionId: razorpay_payment_id,
-//           paymentDate: new Date().toISOString(),
-//           razorpay_payment_id,
-//           razorpay_order_id,
-//           razorpay_signature,
-//         },
-//       };
-
-//       booking = await Booking.create(bookingDoc);
-//     }
-
-//     // 4. Send booking confirmation email
-//     await transporter.sendMail({
-//       from: `"Samsara Adventures" <${process.env.EMAIL}>`,
-//       to: booking.email,
-//       subject: "Your Trip Booking Confirmation",
-//       html: bookingConfirmationTemplate(booking),
-//     });
-
-//     // 5. Send success response
-//     res.json({
-//       success: true,
-//       bookingId: booking._id,
-//       paymentId: razorpay_payment_id,
-//       isCustomTrip: !!bookingData.enquiryId, // Let frontend know if it was a custom trip
-//     });
-//   } catch (error) {
-//     console.error("Booking save/update error:", error);
-
-//     // Specific error messages for validation failures
-//     if (error.name === "ValidationError") {
-//       const messages = Object.values(error.errors).map((val) => val.message);
-//       return res.status(400).json({
-//         success: false,
-//         message: `Validation error: ${messages.join(", ")}`,
-//       });
-//     }
-
-//     res.status(500).json({
-//       success: false,
-//       message: error.message || "Failed to process booking",
-//     });
-//   }
-// };
-
 // Verify Payment
 
 exports.verifyPayment = async (req, res) => {
@@ -350,7 +172,6 @@ exports.verifyPayment = async (req, res) => {
           message: "Not enough seats available",
         });
       }
-
       // Create booking
       const bookingDoc = {
         email: bookingData.email,
@@ -438,6 +259,219 @@ exports.verifyPayment = async (req, res) => {
     });
   }
 };
+
+// exports.verifyPayment = async (req, res) => {
+//   const {
+//     razorpay_payment_id,
+//     razorpay_order_id,
+//     razorpay_signature,
+//     bookingData,
+//   } = req.body;
+
+//   console.log("🟢 [verifyPayment] Called");
+//   console.log("📦 Booking Data:", bookingData?.tripId || bookingData?.enquiryId);
+//   console.log("💳 Razorpay IDs:", {
+//     razorpay_payment_id,
+//     razorpay_order_id,
+//     razorpay_signature,
+//   });
+
+//   try {
+//     // 1️⃣ Verify Razorpay signature
+//     console.log("🧾 Verifying payment signature...");
+//     const generatedSignature = crypto
+//       .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+//       .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+//       .digest("hex");
+
+//     if (generatedSignature !== razorpay_signature) {
+//       console.log("❌ Invalid Razorpay signature!");
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid payment signature",
+//       });
+//     }
+//     console.log("✅ Razorpay signature verified successfully");
+
+//     let booking;
+
+//     // 2️⃣ Custom trip booking flow
+//     if (bookingData.enquiryId) {
+//       console.log("🧭 Custom trip booking detected:", bookingData.enquiryId);
+
+//       booking = await Booking.findByIdAndUpdate(
+//         bookingData.enquiryId,
+//         {
+//           isPaymentPending: false,
+//           isPaymentUpdated: true,
+//           requestStatus: "PAID",
+//           payment: {
+//             subtotal:
+//               bookingData.tripDetails?.payment?.subTotal ||
+//               bookingData.payment?.subtotal ||
+//               0,
+//             taxation:
+//               bookingData.tripDetails?.payment?.taxation ||
+//               bookingData.payment?.taxation ||
+//               0,
+//             insurance:
+//               bookingData.tripDetails?.payment?.insurance ||
+//               bookingData.payment?.insurance ||
+//               0,
+//             activities:
+//               bookingData.tripDetails?.payment?.activities ||
+//               bookingData.payment?.activities ||
+//               0,
+//             grandTotal:
+//               bookingData.totalAmount ||
+//               bookingData?.payment?.grandTotal ||
+//               0,
+//             transactionId: razorpay_payment_id,
+//             paymentDate: new Date().toISOString(),
+//             razorpay_payment_id,
+//             razorpay_order_id,
+//             razorpay_signature,
+//           },
+//           name: bookingData.fullName || bookingData.name || "Not specified",
+//           phone: bookingData.phone || "",
+//           adults: bookingData.adults || 0,
+//           childrens: bookingData.children || bookingData.childrens || 0,
+//           total_members:
+//             (bookingData.adults || 0) + (bookingData.children || 0),
+//         },
+//         { new: true }
+//       );
+
+//       if (!booking) {
+//         console.log("❌ Custom booking not found for enquiryId:", bookingData.enquiryId);
+//         throw new Error("Existing booking not found for custom trip");
+//       }
+
+//       console.log("✅ Custom booking updated successfully");
+//     } else {
+//       // 3️⃣ Regular trip booking flow
+//       console.log("🚌 Regular trip booking detected:", bookingData.tripId);
+
+//       const totalMembers =
+//         bookingData.total_members ||
+//         (bookingData.adults || 0) + (bookingData.children || 0);
+
+//       console.log("👥 Total Members:", totalMembers);
+
+//       // Check seat availability atomically
+//       const trip = await Trip.findOneAndUpdate(
+//         { tripId: bookingData.tripId, availableSeats: { $gte: totalMembers } },
+//         { $inc: { availableSeats: -totalMembers } },
+//         { new: true }
+//       );
+
+//       if (!trip) {
+//         console.log("❌ Not enough seats available for trip:", bookingData.tripId);
+//         return res.status(400).json({
+//           success: false,
+//           message: "Not enough seats available",
+//         });
+//       }
+
+//       console.log("✅ Trip seat availability updated for tripId:", trip.tripId);
+
+//       // Create booking
+//       const bookingDoc = {
+//         email: bookingData.email,
+//         persons: bookingData.persons || [],
+//         name: bookingData.fullName || bookingData.name || "Not specified",
+//         title:
+//           bookingData.tripDetails?.title ||
+//           bookingData.title ||
+//           "Trip Booking",
+//         duration:
+//           bookingData.tripDetails?.duration ||
+//           bookingData.duration ||
+//           "Not specified",
+//         startDate:
+//           bookingData.tripDetails?.startDate ||
+//           bookingData.startDate ||
+//           new Date().toISOString(),
+//         endDate:
+//           bookingData.tripDetails?.endDate ||
+//           bookingData.endDate ||
+//           new Date().toISOString(),
+//         image:
+//           bookingData.tripDetails?.images?.[0] ||
+//           bookingData.image ||
+//           "default_image_url.jpg",
+//         tripId: bookingData.tripId,
+//         phone: bookingData.phone || "",
+//         current_location:
+//           bookingData.pickupLocation || bookingData.current_location || "",
+//         pickupLocation: bookingData.pickupAndDrop || "",
+//         total_members: totalMembers,
+//         adults: bookingData.adults || 0,
+//         childrens: bookingData.children || bookingData.childrens || 0,
+//         tripType: bookingData.tripDetails?.tripType || "PACKAGE",
+//         isPaymentPending: false,
+//         isPaymentUpdated: true,
+//         requestStatus: "PAID",
+//         payment: {
+//           subtotal:
+//             bookingData.tripDetails?.payment?.subTotal ||
+//             bookingData.payment?.subtotal ||
+//             0,
+//           taxation:
+//             bookingData.tripDetails?.payment?.taxation ||
+//             bookingData.payment?.taxation ||
+//             0,
+//           insurance:
+//             bookingData.tripDetails?.payment?.insurance ||
+//             bookingData.payment?.insurance ||
+//             0,
+//           activities:
+//             bookingData.tripDetails?.payment?.activities ||
+//             bookingData.payment?.activities ||
+//             0,
+//           grandTotal:
+//             bookingData.totalAmount ||
+//             bookingData?.payment?.grandTotal ||
+//             0,
+//           transactionId: razorpay_payment_id,
+//           paymentDate: new Date().toISOString(),
+//           razorpay_payment_id,
+//           razorpay_order_id,
+//           razorpay_signature,
+//         },
+//       };
+
+//       console.log("📝 Creating new booking...");
+//       booking = await Booking.create(bookingDoc);
+//       console.log("✅ Booking created successfully:", booking._id);
+//     }
+
+//     // 4️⃣ Send confirmation email
+//     console.log("📧 Sending confirmation email to:", booking.email);
+//     await transporter.sendMail({
+//       from: `"Samsara Adventures" <${process.env.EMAIL}>`,
+//       to: booking.email,
+//       subject: "Your Trip Booking Confirmation",
+//       html: bookingConfirmationTemplate(booking),
+//     });
+//     console.log("✅ Confirmation email sent successfully");
+
+//     // ✅ Success response
+//     res.json({
+//       success: true,
+//       bookingId: booking._id,
+//       paymentId: razorpay_payment_id,
+//       isCustomTrip: !!bookingData.enquiryId,
+//     });
+//   } catch (error) {
+//     console.error("❌ Booking save/update error:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: error.message || "Failed to process booking",
+//     });
+//   }
+// };
+
 
 // Helper function to calculate refund
 function calculateRefund(startDateString, totalAmount) {
