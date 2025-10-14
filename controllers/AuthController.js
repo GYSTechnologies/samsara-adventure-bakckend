@@ -122,7 +122,7 @@ const signup = async (req, res, next) => {
     // Send OTP email
     // transporter.sendMail(
     //   {
-    //     from: `"Samsara Adventure" <${process.env.EMAIL}>`,
+    //     from: `"Samsara Adventures" <${process.env.EMAIL}>`,
     //     to: email,
     //     subject: "🔐 Email Verification - Your OTP Code",
     //     html: `... your email template ...`,
@@ -130,14 +130,14 @@ const signup = async (req, res, next) => {
 
         transporter.sendMail(
       {
-        from: `"Samsara Adventure" <${process.env.EMAIL}>`,
+        from: `"Samsara Adventures" <${process.env.EMAIL}>`,
         to: email,
         subject: "🔐 Email Verification - Your OTP Code",
         html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
                     <h2 style="color: #4CAF50; text-align: center;">Email Verification</h2>
                     <p>Dear User,</p>
-                    <p>Thank you for registering with <strong>Samsara Adventure</strong>. Please use the following One-Time Password (OTP) to verify your email address:</p>
+                    <p>Thank you for registering with <strong>Samsara Adventures</strong>. Please use the following One-Time Password (OTP) to verify your email address:</p>
                     <div style="text-align: center; margin: 20px 0;">
                         <span style="display: inline-block; font-size: 24px; letter-spacing: 3px; background: #f4f4f4; padding: 10px 20px; border-radius: 5px; font-weight: bold;">
                             ${otp}
@@ -146,7 +146,7 @@ const signup = async (req, res, next) => {
                     <p>This OTP will expire in <strong>5 minutes</strong>. Please do not share this code with anyone for security reasons.</p>
                     <p>If you did not request this verification, please ignore this email.</p>
                     <br>
-                    <p>Best regards,<br><strong>Samsara Adventure</strong> Support Team</p>
+                    <p>Best regards,<br><strong>Samsara Adventures</strong> Support Team</p>
                     <hr>
                     <p style="font-size: 12px; color: #888; text-align: center;">
                         This is an automated message. Please do not reply to this email.
@@ -263,14 +263,14 @@ const resetOtp = async (req, res) => {
     // Send OTP via email
     transporter.sendMail(
       {
-        from: `"Samsara Adventure" <${process.env.EMAIL}>`,
+        from: `"Samsara Adventures" <${process.env.EMAIL}>`,
         to: email,
         subject: "🔐 Reset OTP - Email Verification",
         html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
                 <h2 style="color: #2196F3; text-align: center;">New OTP Requested</h2>
                 <p>Dear User,</p>
-                <p>You have requested a new OTP for <strong>Samsara Adventure</strong>. Please use the following One-Time Password (OTP) to verify your email address:</p>
+                <p>You have requested a new OTP for <strong>Samsara Adventures</strong>. Please use the following One-Time Password (OTP) to verify your email address:</p>
                 <div style="text-align: center; margin: 20px 0;">
                     <span style="display: inline-block; font-size: 24px; letter-spacing: 3px; background: #f4f4f4; padding: 10px 20px; border-radius: 5px; font-weight: bold;">
                         ${otp}
@@ -279,7 +279,7 @@ const resetOtp = async (req, res) => {
                 <p>This OTP will expire in <strong>5 minutes</strong>. Please do not share this code with anyone for security reasons.</p>
                 <p>If you did not request this verification, please ignore this email.</p>
                 <br>
-                <p>Best regards,<br><strong>Samsara Adventure</strong> Support Team</p>
+                <p>Best regards,<br><strong>Samsara Adventures</strong> Support Team</p>
                 <hr>
                 <p style="font-size: 12px; color: #888; text-align: center;">
                     This is an automated message. Please do not reply to this email.
@@ -452,14 +452,14 @@ const sendOtpForResetPassword = async (req, res) => {
     // Send OTP via email
     transporter.sendMail(
       {
-        from: `"Samsara Adventure" <${process.env.EMAIL}>`,
+        from: `"Samsara Adventures" <${process.env.EMAIL}>`,
         to: email,
         subject: "🔐 Reset Password Verification - Your OTP Code",
         text: `Your OTP code is ${otp}. It is valid for 5 minutes.`,
         html: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
                 <h2 style="color: #D8327D; text-align: center;">Reset Your Password</h2>
                 <p>Dear User,</p>
-                <p>We have received a request to reset the password for your <strong>Samsara Adventure</strong> account. Please use the OTP below to proceed with resetting your password:</p>
+                <p>We have received a request to reset the password for your <strong>Samsara Adventures</strong> account. Please use the OTP below to proceed with resetting your password:</p>
                 <div style="text-align: center; margin: 20px 0;">
                     <span style="display: inline-block; font-size: 24px; letter-spacing: 3px; background: #f4f4f4; padding: 10px 20px; border-radius: 5px; font-weight: bold;">
                         ${otp}
@@ -468,7 +468,7 @@ const sendOtpForResetPassword = async (req, res) => {
                 <p>This OTP will expire in <strong>5 minutes</strong>. If you did not request a password reset, please ignore this email and ensure your account security.</p>
                 <p>After entering this OTP, you will be able to set a new password for your account.</p>
                 <br>
-                    <p>Best regards,<br><strong>Samsara Adventure</strong> Support Team</p>
+                    <p>Best regards,<br><strong>Samsara Adventures</strong> Support Team</p>
                     <hr>
                         <p style="font-size: 12px; color: #888; text-align: center;">
                             This is an automated message. Please do not reply to this email.

@@ -110,6 +110,9 @@ exports.verifyPayment = async (req, res) => {
 
     if (bookingData.enquiryId) {
       // -------- Custom trip booking --------
+      const existingBooking = await Booking.findById(bookingData.enquiryId);
+      if (!existingBooking) throw new Error("Existing booking not found for custom trip");
+
       booking = await Booking.findByIdAndUpdate(
         bookingData.enquiryId,
         {
@@ -141,18 +144,31 @@ exports.verifyPayment = async (req, res) => {
             razorpay_order_id,
             razorpay_signature,
           },
-          name: bookingData.fullName || bookingData.name || "Not specified",
-          phone: bookingData.phone || "",
-          adults: bookingData.adults || 0,
-          childrens: bookingData.children || bookingData.childrens || 0,
+          name:
+            bookingData.fullName ||
+            bookingData.name ||
+            existingBooking.name ||
+            "Not specified",
+          phone: bookingData.phone || existingBooking.phone || "",
+          adults:
+            bookingData.adults != null ? bookingData.adults : existingBooking.adults,
+          childrens:
+            bookingData.children != null
+              ? bookingData.children
+              : bookingData.childrens != null
+                ? bookingData.childrens
+                : existingBooking.childrens,
           total_members:
-            (bookingData.adults || 0) + (bookingData.children || 0),
+            bookingData.adults != null || bookingData.children != null
+              ? (bookingData.adults || existingBooking.adults || 0) +
+              (bookingData.children ||
+                bookingData.childrens ||
+                existingBooking.childrens ||
+                0)
+              : existingBooking.total_members,
         },
         { new: true }
       );
-
-      if (!booking)
-        throw new Error("Existing booking not found for custom trip");
     } else {
       // -------- Regular trip booking --------
       const totalMembers =

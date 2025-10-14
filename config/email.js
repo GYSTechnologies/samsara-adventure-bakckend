@@ -17,7 +17,7 @@ exports.sendCancellationRequestUserEmail = async (email, booking, reason) => {
     date ? new Date(date).toLocaleDateString("en-IN", { dateStyle: "medium" }) : "N/A";
 
   const mailOptions = {
-    from: `"Samsara Adventure" <${process.env.EMAIL}>`,
+    from: `"Samsara Adventures" <${process.env.EMAIL}>`,
     to: email,
     subject: `📌 Cancellation Request Received – ${booking.title || "Your Booking"}`,
     html: `
@@ -32,7 +32,7 @@ exports.sendCancellationRequestUserEmail = async (email, booking, reason) => {
         </ul>
         <p>✅ Our team will review your request and notify you once it’s processed.</p>
         <br/>
-        <p style="color: #555;">Warm regards,<br/><strong>Team Samsara Adventure</strong></p>
+        <p style="color: #555;">Warm regards,<br/><strong>Team Samsara Adventures</strong></p>
       </div>
     `,
   };
@@ -46,7 +46,7 @@ exports.sendCancellationRequestAdminEmail = async (booking, reason) => {
     date ? new Date(date).toLocaleDateString("en-IN", { dateStyle: "medium" }) : "N/A";
 
   const mailOptions = {
-    from: `"Samsara Adventure" <${process.env.EMAIL}>`,
+    from: `"Samsara Adventures" <${process.env.EMAIL}>`,
     to: process.env.ADMIN_EMAIL, 
     subject: `⚠️ Cancellation Request – ${booking.title || "Booking"}`,
     html: `
@@ -96,7 +96,7 @@ exports.sendAdminCustomTripEmail = async (formData) => {
 //User custom mail
 exports.sendUserCustomTripEmail = async (formData) => {
   const mailOptions = {
-    from: `"Samsara Adventure" <${process.env.EMAIL}>`,
+    from: `"Samsara Adventures" <${process.env.EMAIL}>`,
     to: formData.email,
     subject: "Your Custom Trip Request Submitted",
     html: `
@@ -123,7 +123,7 @@ exports.sendCustomItineraryEmail = async (email, enquiry) => {
   const payment = itinerary.payment || {};
 
   const mailOptions = {
-    from: `"Samsara Adventure" <${process.env.EMAIL}>`,
+    from: `"Samsara Adventures" <${process.env.EMAIL}>`,
     to: email,
     subject: `📝 Custom Itinerary Approved – ${enquiry.title || "Your Trip"}`,
     html: `
@@ -199,7 +199,7 @@ exports.sendCustomItineraryEmail = async (email, enquiry) => {
         <p style="margin-top:20px;">✅ Your itinerary has been approved. Please proceed with payment when ready to confirm your booking.</p>
 
         <br/>
-        <p style="color:#555;">Warm regards,<br/><strong>Team Samsara Adventure</strong></p>
+        <p style="color:#555;">Warm regards,<br/><strong>Team Samsara Adventures</strong></p>
       </div>
     `,
   };
@@ -217,7 +217,7 @@ exports.sendCancellationApprovalEmail = async (email, booking) => {
   const payment = booking.payment || {};
 
   const mailOptions = {
-    from: `"Samsara Adventure" <${process.env.EMAIL}>`,
+    from: `"Samsara Adventures" <${process.env.EMAIL}>`,
     to: email,
     subject: `✅ Cancellation Approved – ${booking.title || "Your Booking"}`,
     html: `
@@ -267,7 +267,7 @@ exports.sendCancellationApprovalEmail = async (email, booking) => {
         <p style="margin-top:20px;">If you have any questions, feel free to contact our support team.</p>
         
         <br/>
-        <p style="color:#555;">Warm regards,<br/><strong>Team Samsara Adventure</strong></p>
+        <p style="color:#555;">Warm regards,<br/><strong>Team Samsara Adventures</strong></p>
       </div>
     `,
   };

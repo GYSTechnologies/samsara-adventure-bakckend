@@ -266,6 +266,7 @@ const createTrip = async (req, res) => {
       itinerary: itineraryWithoutImages,
       pickupDropLocation,
       isActive,
+      availableSeats:totalSeats
     });
 
     await newTrip.save();
