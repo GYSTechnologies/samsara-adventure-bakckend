@@ -18,8 +18,8 @@ app.use(express.urlencoded({ extended: true }));
 // Example for Express
 app.use(
   cors({
-      // origin: 'http://localhost:5173',
-    origin: process.env.CLIENT_URL,
+      origin: 'http://localhost:5173',
+    // origin: process.env.CLIENT_URL,
     credentials: true,
   })
 );

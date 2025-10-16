@@ -671,9 +671,72 @@ exports.getCartEvent = async (req, res) => {
 
     res.status(200).json(events);
   } catch (err) {
-    res.status(500).json({ 
-      message: "Error fetching events", 
-      error: err.message 
+    res.status(500).json({
+      message: "Error fetching events",
+      error: err.message
+    });
+  }
+};
+
+
+exports.getBookedEventById = async (req, res) => {
+  try {
+    const { bookingId } = req.query;
+    // ✅ Validate ObjectId format (MongoDB 24-char hex)
+    if (!bookingId || !bookingId.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid booking ID format',
+      });
+    }
+    // ✅ Fetch booking and populate limited event fields
+    const booking = await EventBooking.findById(bookingId)
+      .populate({
+        path: 'event',
+        select: '_id title date location venue price coverImage', // only specific event fields
+      })
+      .select(
+        'tickets contactInfo totalAmount status paymentStatus refundAmount bookingDate'
+      );
+
+    // ✅ Check if booking exists
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found',
+      });
+    }
+
+    // ✅ Respond with well-structured JSON (no stringified response)
+    return res.status(200).json({
+      success: true,
+      data: {
+        tickets: booking.tickets,
+        contactInfo: booking.contactInfo,
+        totalAmount: booking.totalAmount,
+        status: booking.status,
+        paymentStatus: booking.paymentStatus,
+        refundAmount: booking.refundAmount,
+        bookingDate: booking.bookingDate,
+        event: booking.event
+          ? {
+            id: booking.event._id,
+            title: booking.event.title,
+            date: booking.event.date,
+            location: booking.event.location,
+            venue: booking.event.venue,
+            price: booking.event.price,
+            coverImage: booking.event.coverImage,
+          }
+          : null,
+      },
+    });
+  } catch (error) {
+    console.error('❌ Error fetching booking:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error while fetching booking',
+      error: error.message,
     });
   }
 };

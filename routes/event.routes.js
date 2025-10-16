@@ -33,4 +33,7 @@ router.get('/admin/events', authMiddleware, eventController.getAdminEvents);
 router.get('/admin/bookings', authMiddleware, eventController.getAllBookings);
 router.post('/admin/approve-cancellation', authMiddleware, eventController.approveCancellation);
 
+// New Apis
+router.get('/user/getBookedEventById',eventController.getBookedEventById);
+
 module.exports = router;

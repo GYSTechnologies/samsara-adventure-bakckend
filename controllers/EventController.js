@@ -1,4 +1,5 @@
 const EventModel = require('../models/EventModel')
+const EventBooking = require('../models/EventBookingModel')
 
 const createEvent = async (req, res) => {
     try {
@@ -102,7 +103,7 @@ const getAllEventPageEvents = async (req, res) => {
 const getEventByEventId = async (req, res) => {
     try {
         const { eventId } = req.query;
-        const event = await EventModel.findOne({ _id:eventId });
+        const event = await EventModel.findOne({ _id: eventId });
         if (!event) {
             return res.status(404).json({ message: "Event not found!" })
         }
@@ -116,4 +117,5 @@ const getEventByEventId = async (req, res) => {
         });
     }
 }
-module.exports = { createEvent, getAllEvents, getEventByEventId, getAllEventPageEvents };
+
+module.exports = { createEvent, getAllEvents, getEventByEventId, getAllEventPageEvents};
