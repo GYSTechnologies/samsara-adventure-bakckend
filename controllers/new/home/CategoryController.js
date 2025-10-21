@@ -17,7 +17,7 @@ exports.createCategory = async (req, res) => {
             });
         }
 
-        const newCategory = new Category({ category, image });
+        const newCategory = new Category({ category, active: true, image });
         await newCategory.save();
 
         res.status(201).json({
@@ -31,22 +31,6 @@ exports.createCategory = async (req, res) => {
     }
 };
 
-// GET ALL Categories
-// exports.getAllCategories = async (req, res) => {
-//     try {
-//         const categories = await Category.find().sort({ createdAt: -1 });
-
-//         res.status(200).json({
-//             success: true,
-//             count: categories.length,
-//             data: categories,
-//         });
-//     } catch (error) {
-//         console.error("Error fetching categories:", error);
-//         res.status(500).json({ success: false, message: "Server Error" });
-//     }
-// };
-
 exports.getAllCategories = async (req, res) => {
     try {
         let { page = 1, limit = 10 } = req.query;
@@ -55,7 +39,9 @@ exports.getAllCategories = async (req, res) => {
         const skip = (page - 1) * limit;
 
         // Fetch categories with pagination and sort by newest first
-        const categories = await Category.find()
+        const categories = await Category.find(
+            { active: true }
+        )
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit);
@@ -160,3 +146,43 @@ function extractPublicId(imageUrl) {
         return null;
     }
 }
+
+// Update active status of a state
+exports.updateCategoryActiveStatus = async (req, res) => {
+    try {
+        const { id, active } = req.body; // Boolean from request body
+
+        if (typeof active !== "boolean") {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid value for 'active'. Must be a boolean (true/false).",
+            });
+        }
+
+        const updatedCategory = await Category.findByIdAndUpdate(
+            id,
+            { active },
+            { new: true } // return the updated document
+        );
+
+        if (!updatedCategory) {
+            return res.status(404).json({
+                success: false,
+                message: "Category not found.",
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Category active status updated successfully.",
+            data: updatedCategory,
+        });
+    } catch (error) {
+        console.error("Error updating category active status:", error);
+        res.status(500).json({
+            success: false,
+            message: "Server error while updating category.",
+            error: error.message,
+        });
+    }
+};

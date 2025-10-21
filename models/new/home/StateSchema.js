@@ -7,6 +7,11 @@ const StateSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    active: {
+      type: Boolean,
+      required: true,
+      default: true
+    },
     image: {
       url: { type: String, required: true },
       public_id: { type: String, required: true },
