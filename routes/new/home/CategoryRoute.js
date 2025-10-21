@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const parser = require('../../../middlewares/upload');
 
-const { createCategory, deleteCategory, getAllCategories, updateCategory,updateCategoryActiveStatus } = require('../../../controllers/new/home/CategoryController');
+const { createCategory, deleteCategory, getAllCategories, updateCategory,updateCategoryActiveStatus,getAllCategoriesAdmin } = require('../../../controllers/new/home/CategoryController');
 
 router.post('/createCategory', parser.single('image'), createCategory);
 
@@ -13,5 +13,8 @@ router.get('/getAllCategories',getAllCategories);
 router.put('/updateCategory',updateCategory);
 
 router.put('/updateCategoryActiveStatus',updateCategoryActiveStatus);
+
+// Admin
+router.get('/getAllCategoriesAdmin',getAllCategoriesAdmin);
 
 module.exports = router;

@@ -186,3 +186,21 @@ exports.updateCategoryActiveStatus = async (req, res) => {
         });
     }
 };
+
+exports.getAllCategoriesAdmin = async (req, res) => {
+  try {
+    const categories = await Category.find(); // Fetch all categories
+    return res.status(200).json({
+      success: true,
+      data: categories,
+      message: "Categories fetched successfully",
+    });
+  } catch (error) {
+    console.error("Error fetching categories:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server Error",
+      error: error.message,
+    });
+  }
+};

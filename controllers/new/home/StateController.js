@@ -200,3 +200,22 @@ exports.updateStateActiveStatus = async (req, res) => {
         });
     }
 };
+
+
+exports.getAllStatesAdmin = async (req, res) => {
+  try {
+    const states = await State.find(); // Fetch all states
+    return res.status(200).json({
+      success: true,
+      data: states,
+      message: "States fetched successfully",
+    });
+  } catch (error) {
+    console.error("Error fetching states:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server Error",
+      error: error.message,
+    });
+  }
+};
