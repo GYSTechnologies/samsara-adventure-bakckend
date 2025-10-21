@@ -7,7 +7,8 @@ const {
     getAllStates,
     updateState,
     deleteState,
-    updateStateActiveStatus
+    updateStateActiveStatus,
+    getAllStatesAdmin
 } = require("../../../controllers/new/home/StateController");
 
 router.post("/createState", parser.single("image"), createState);
@@ -15,5 +16,8 @@ router.get("/getAllStates", getAllStates);
 router.put("/updateState", parser.single("image"), updateState);
 router.delete("/deleteState", deleteState);
 router.put('/updateStateActiveStatus',updateStateActiveStatus);
+
+// Admin
+router.get('/getAllStatesAdmin',getAllStatesAdmin);
 
 module.exports = router;
