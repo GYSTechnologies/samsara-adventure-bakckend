@@ -37,42 +37,54 @@ const toggleFavoriteTrip = async (req, res) => {
   }
 };
 
-const getFavoriteTripsByUser = async (req, res) => {
+ const getFavoriteTripsByUser = async (req, res) => {
   try {
-    const { email } = req.params;
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const skip = (page - 1) * limit;
+    const { email } = req.query;
 
-    // Get all favorite trip IDs for the user
-    const favorites = await FavoriteTrip.find({ email }).select("tripId");
-    const favoriteTripIds = favorites.map(f => f.tripId);
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'Email is required' });
+    }
 
-    // Fetch paginated trips with selected fields
+    const favorites = await FavoriteTrip.find({ email }).select('tripId');
+    const favoriteTripIds = favorites.map((f) => f.tripId);
+
+    if (favoriteTripIds.length === 0) {
+      return res.status(200).json({ success: true, trips: [] });
+    }
+
     const trips = await TripItineraryModel.find({ tripId: { $in: favoriteTripIds } })
-      .select('tripId title images payment duration activities tripType')
-      .skip(skip)
-      .limit(limit);
+      .select('tripId title images payment duration activities tripType state');
 
-    // Format the response
-    const formattedTrips = trips.map(trip => {
-      const tripObj = trip.toObject();
+    const formattedTrips = trips.map((trip) => {
+      const t = trip.toObject();
+      const primaryImage = Array.isArray(t.images) && t.images.length > 0 ? t.images[0] : null;
+      const price =
+        t.payment?.subTotal ??
+        t.payment?.actualPrice ??
+        t.payment?.grandTotal ??
+        0;
+
       return {
-        tripId: tripObj.tripId,
-        title: tripObj.title,
-        image: tripObj.images?.[0] || null,
-        duration: tripObj.duration,
-        activities: tripObj.activities || [],
-        payment: tripObj.payment || {},
-        tripType: tripObj.tripType
+        tripId: t.tripId,
+        title: t.title,
+        image: primaryImage,
+        duration: t.duration,
+        activities: t.activities || [],
+        price,
+        payment: t.payment || {},
+        tripType: t.tripType || 'CUSTOMIZED',
+        state: t.state || 'Unknown',
       };
     });
 
-    res.status(200).json({ trips: formattedTrips });
-
+    res.status(200).json({ success: true, trips: formattedTrips });
   } catch (error) {
-    console.error("Error fetching favorite trips", error);
-    res.status(500).json({ success: false, message: 'Error fetching favorite trips', error: error.message });
+    console.error('Error fetching favorite trips', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching favorite trips',
+      error: error.message,
+    });
   }
 };
 module.exports = { toggleFavoriteTrip, getFavoriteTripsByUser };

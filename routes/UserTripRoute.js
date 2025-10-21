@@ -6,6 +6,6 @@ const {
 } = require('../controllers/UserTripsControlller');
 
 router.post('/toggleFavorite', toggleFavoriteTrip);
-router.get('/getFavoriteTrips/:email', getFavoriteTripsByUser);
+router.get('/getFavoriteTrips', getFavoriteTripsByUser);
 
 module.exports = router;

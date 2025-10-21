@@ -65,14 +65,14 @@ exports.submitCustomRequest = async (req, res) => {
       "current_location", // Consistent naming
       "persons"
     ];
-
+    console.log("FORM_DATA", formData)
     const missingFields = requiredFields.filter((field) => !formData[field]);
     if (missingFields.length > 0) {
       return res.status(400).json({
         error: `Missing required fields: ${missingFields.join(", ")}`,
       });
     }
-
+    console.log("FORM_DATA", formData)
     // Check for existing request
     const existingRequest = await Booking.findOne({
       email: formData.email,
@@ -120,6 +120,7 @@ exports.submitCustomRequest = async (req, res) => {
       sendAdminCustomTripEmail(formData),
       sendUserCustomTripEmail(formData)
     ]);
+    console.log("EMAILS_SENT")
     res.json({
       success: true,
       requestId: newRequest._id,
