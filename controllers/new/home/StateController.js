@@ -20,6 +20,7 @@ exports.createState = async (req, res) => {
 
         const newState = new State({
             state,
+            active: true,
             image: { url: result.secure_url, public_id: result.public_id },
         });
 
@@ -36,48 +37,36 @@ exports.createState = async (req, res) => {
     }
 };
 
-// GET ALL States
-// exports.getAllStates = async (req, res) => {
-//     try {
-//         const states = await State.find().sort({ createdAt: -1 });
-
-//         res.status(200).json({
-//             success: true,
-//             count: states.length,
-//             data: states,
-//         });
-//     } catch (error) {
-//         console.error("Error fetching states:", error);
-//         res.status(500).json({ success: false, message: "Server Error" });
-//     }
-// };
 exports.getAllStates = async (req, res) => {
-    try {
-        // page and limit from query params
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 10;
+  try {
+    // page and limit from query params
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
 
-        const skip = (page - 1) * limit;
+    // count only active states
+    const totalStates = await State.countDocuments({ active: true });
 
-        // total documents count
-        const totalStates = await State.countDocuments();
+    // fetch only active states with selected fields
+    const states = await State.find(
+      { active: true },
+      { state: 1, image: 1 }
+    )
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
 
-        // fetch only state and image fields
-        const states = await State.find({}, { state: 1, image: 1 })
-            .sort({ createdAt: -1 })
-            .skip(skip)
-            .limit(limit);
-
-        res.status(200).json({
-            success: true,
-            count: states.length,
-            data: states,
-        });
-    } catch (error) {
-        console.error("Error fetching states:", error);
-        res.status(500).json({ success: false, message: "Server Error" });
-    }
+    res.status(200).json({
+      success: true,
+      count: states.length,
+      data: states,
+    });
+  } catch (error) {
+    console.error("Error fetching states:", error);
+    res.status(500).json({ success: false, message: "Server Error" });
+  }
 };
+
 
 // UPDATE State
 exports.updateState = async (req, res) => {
@@ -171,3 +160,43 @@ function extractPublicId(imageUrl) {
         return null;
     }
 }
+
+// Update active status of a state
+exports.updateStateActiveStatus = async (req, res) => {
+    try {
+        const { id,active } = req.body; // Boolean from request body
+
+        if (typeof active !== "boolean") {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid value for 'active'. Must be a boolean (true/false).",
+            });
+        }
+
+        const updatedState = await State.findByIdAndUpdate(
+            id,
+            { active },
+            { new: true } // return the updated document
+        );
+
+        if (!updatedState) {
+            return res.status(404).json({
+                success: false,
+                message: "State not found.",
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "State active status updated successfully.",
+            data: updatedState,
+        });
+    } catch (error) {
+        console.error("Error updating state active status:", error);
+        res.status(500).json({
+            success: false,
+            message: "Server error while updating state.",
+            error: error.message,
+        });
+    }
+};

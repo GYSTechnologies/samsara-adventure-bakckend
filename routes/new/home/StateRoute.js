@@ -7,11 +7,13 @@ const {
     getAllStates,
     updateState,
     deleteState,
+    updateStateActiveStatus
 } = require("../../../controllers/new/home/StateController");
 
 router.post("/createState", parser.single("image"), createState);
 router.get("/getAllStates", getAllStates);
 router.put("/updateState", parser.single("image"), updateState);
 router.delete("/deleteState", deleteState);
+router.put('/updateStateActiveStatus',updateStateActiveStatus);
 
 module.exports = router;

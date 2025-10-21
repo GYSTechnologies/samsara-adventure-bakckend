@@ -6,6 +6,11 @@ const CategorySchema = new mongoose.Schema(
             type: String,
             required: true, // you can remove this if image is optional
         },
+        active: {
+            type: Boolean,
+            required: true,
+            default: true
+        },
         category: {
             type: String,
             required: true,
