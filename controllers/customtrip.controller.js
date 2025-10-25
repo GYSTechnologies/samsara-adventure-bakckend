@@ -51,7 +51,6 @@ exports.checkRequestStatus = async (req, res) => {
 
 //  Submit new custom trip request
 exports.submitCustomRequest = async (req, res) => {
-  console.log("HITTTING_SUB")
   try {
     const formData = req.body;
 
