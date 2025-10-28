@@ -1,34 +1,13 @@
 const nodemailer = require("nodemailer");
 require("dotenv").config();
 
-// const transporter = nodemailer.createTransport({
-//   service: "gmail",
-//   auth: {
-//     user: process.env.EMAIL,
-//     pass: process.env.EMAIL_PASSWORD,
-//   },
-// });
-// const transporter = nodemailer.createTransport({
-//   host: 'smtp.gmail.com',
-//   port: 2525,
-//   auth: {
-//     user: process.env.EMAIL,
-//     pass: process.env.EMAIL_PASSWORD, // Use App Password, not regular password
-//   },
-//   connectionTimeout: 10000, // 10 seconds
-//   greetingTimeout: 5000,
-//   socketTimeout: 10000,
-// });
-
 const transporter = nodemailer.createTransport({
-  host: "smtp.mailjet.com",
-  port: 2525, // Mailjet allows this port
+  service: "gmail",
   auth: {
-    user: process.env.MAILJET_USER,
-    pass: process.env.MAILJET_PASS,
+    user: process.env.EMAIL,
+    pass: process.env.EMAIL_PASSWORD,
   },
 });
-
 
 //  User Cancellation Request Confirmation
 exports.sendCancellationRequestUserEmail = async (email, booking, reason) => {
@@ -56,16 +35,7 @@ exports.sendCancellationRequestUserEmail = async (email, booking, reason) => {
     `,
   };
 
-  // await transporter.sendMail(mailOptions);
-  await new Promise((resolve, reject) => {
-    transporter.sendMail(mailOptions, (err, info) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(info);
-      }
-    });
-  });
+  await transporter.sendMail(mailOptions);
 };
 
 //  Admin  Cancellation Alert
@@ -101,16 +71,7 @@ exports.sendCancellationRequestAdminEmail = async (booking, reason) => {
     `,
   };
 
-  // await transporter.sendMail(mailOptions);
-  await new Promise((resolve, reject) => {
-    transporter.sendMail(mailOptions, (err, info) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(info);
-      }
-    });
-  });
+  await transporter.sendMail(mailOptions);
 };
 
 
