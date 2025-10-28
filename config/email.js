@@ -8,16 +8,25 @@ require("dotenv").config();
 //     pass: process.env.EMAIL_PASSWORD,
 //   },
 // });
+// const transporter = nodemailer.createTransport({
+//   host: 'smtp.gmail.com',
+//   port: 2525,
+//   auth: {
+//     user: process.env.EMAIL,
+//     pass: process.env.EMAIL_PASSWORD, // Use App Password, not regular password
+//   },
+//   connectionTimeout: 10000, // 10 seconds
+//   greetingTimeout: 5000,
+//   socketTimeout: 10000,
+// });
+
 const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 2525,
+  host: "smtp.mailjet.com",
+  port: 2525, // Mailjet allows this port
   auth: {
-    user: process.env.EMAIL,
-    pass: process.env.EMAIL_PASSWORD, // Use App Password, not regular password
+    user: process.env.MAILJET_USER,
+    pass: process.env.MAILJET_PASS,
   },
-  connectionTimeout: 10000, // 10 seconds
-  greetingTimeout: 5000,
-  socketTimeout: 10000,
 });
 
 
