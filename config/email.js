@@ -10,8 +10,8 @@ require("dotenv").config();
 // });
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
-  port: 465,
-  secure: true, // Use STARTTLS
+  port: 587,
+  secure: false, // Use STARTTLS
   requireTLS: true,
   auth: {
     user: process.env.EMAIL,
