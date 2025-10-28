@@ -8,7 +8,7 @@ const Booking = require("../models/BookingSchema");
 const FavoriteTrip = require("../models/FavoriteTripSchema");
 const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
-const {OAuth2Client} = require("google-auth-library");
+const { OAuth2Client } = require("google-auth-library");
 const crypto = require("crypto");
 const cloudinary = require("../cloudinary");
 
@@ -83,13 +83,13 @@ const signup = async (req, res, next) => {
     if (req.file) {
       // Check if Cloudinary provided a secure_url
       profileUrlFromReq = req.file.path || req.file.filename || req.file.secure_url || null;
-      
+
       // If using Cloudinary, the URL should be in secure_url
       if (req.file.secure_url) {
         profileUrlFromReq = req.file.secure_url;
       }
     } else {
-      profileUrlFromReq = req.body.profileUrl; 
+      profileUrlFromReq = req.body.profileUrl;
     }
 
     const profileUrl =
@@ -97,7 +97,7 @@ const signup = async (req, res, next) => {
         ? profileUrlFromReq.trim()
         : "https://cdn-icons-png.flaticon.com/512/149/149071.png";
 
-    
+
 
     // Check if user already exists
     let existUser;
@@ -107,7 +107,7 @@ const signup = async (req, res, next) => {
       console.error("Error finding user:", e);
       return res.status(500).json({ message: "Server error during signup" });
     }
-    
+
     if (existUser) {
       return res.status(400).json({ message: "This email already exists!" });
     }
@@ -128,7 +128,7 @@ const signup = async (req, res, next) => {
     //     html: `... your email template ...`,
     //   },
 
-        transporter.sendMail(
+    transporter.sendMail(
       {
         from: `"Samsara Adventures" <${process.env.EMAIL}>`,
         to: email,
@@ -234,7 +234,7 @@ const verifyEmail = async (req, res) => {
         userType: newUser.userType,
         profileUrl: newUser.profileUrl,
         phoneNumber: newUser.phoneNumber,
-        token:token
+        token: token
       },
     });
   } catch (error) {
@@ -611,10 +611,11 @@ const resetPassword = async (req, res) => {
 };
 
 const updateProfile = async (req, res) => {
-  const { email, name } = req.body;
+  const { email, name, phoneNumber } = req.body;
   try {
     const updateData = {};
     if (name) updateData.name = name;
+    if (phoneNumber) updateData.phoneNumber = phoneNumber;
     if (req.file && req.file.path) {
       updateData.profileUrl = req.file.path;
     }
