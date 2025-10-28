@@ -219,3 +219,20 @@ exports.getAllStatesAdmin = async (req, res) => {
     });
   }
 };
+
+exports.getActiveStates = async (req, res) => {
+  try {
+    const states = await State.find({ active: true }).select("state -_id"); // fetch only 'state' field
+    res.status(200).json({
+      success: true,
+      count: states.length,
+      data: states.map((s) => s.state), // send only names
+    });
+  } catch (error) {
+    console.error("Error fetching active states:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server Error",
+    });
+  }
+};

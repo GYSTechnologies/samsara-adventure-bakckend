@@ -204,3 +204,29 @@ exports.getAllCategoriesAdmin = async (req, res) => {
     });
   }
 };
+
+// Get only active category names
+exports.getActiveCategoryNames = async (req, res) => {
+  try {
+    // Find categories where 'active' is true, and project only 'category' field
+    const activeCategories = await Category.find(
+      { active: true },
+      { category: 1, _id: 0 } // projection: include category, exclude _id
+    );
+
+    // Extract category names into array (optional)
+    const categoryNames = activeCategories.map(cat => cat.category);
+
+    res.status(200).json({
+      success: true,
+      count: categoryNames.length,
+      categories: categoryNames,
+    });
+  } catch (error) {
+    console.error('Error fetching active categories:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server Error',
+    });
+  }
+};

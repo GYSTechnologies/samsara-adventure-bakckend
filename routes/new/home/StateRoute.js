@@ -8,7 +8,8 @@ const {
     updateState,
     deleteState,
     updateStateActiveStatus,
-    getAllStatesAdmin
+    getAllStatesAdmin,
+    getActiveStates
 } = require("../../../controllers/new/home/StateController");
 
 router.post("/createState", parser.single("image"), createState);
@@ -19,5 +20,7 @@ router.put('/updateStateActiveStatus',updateStateActiveStatus);
 
 // Admin
 router.get('/getAllStatesAdmin',getAllStatesAdmin);
+
+router.get('/getActiveStates',getActiveStates);
 
 module.exports = router;
