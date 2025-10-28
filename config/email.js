@@ -11,7 +11,7 @@ require("dotenv").config();
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
   port: 2525,
-  requireTLS: true,
+  requireTLS: false,
   auth: {
     user: process.env.EMAIL,
     pass: process.env.EMAIL_PASSWORD, // Use App Password, not regular password
