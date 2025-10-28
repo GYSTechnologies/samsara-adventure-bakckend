@@ -37,7 +37,16 @@ exports.sendCancellationRequestUserEmail = async (email, booking, reason) => {
     `,
   };
 
-  await transporter.sendMail(mailOptions);
+  // await transporter.sendMail(mailOptions);
+   await new Promise((resolve, reject) => {
+    transporter.sendMail(mailOptions, (err, info) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(info);
+      }
+    });
+  });
 };
 
 //  Admin  Cancellation Alert
@@ -66,7 +75,16 @@ exports.sendCancellationRequestAdminEmail = async (booking, reason) => {
     `,
   };
 
-  await transporter.sendMail(mailOptions);
+  // await transporter.sendMail(mailOptions);
+   await new Promise((resolve, reject) => {
+    transporter.sendMail(mailOptions, (err, info) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(info);
+      }
+    });
+  });
 };
 
 
