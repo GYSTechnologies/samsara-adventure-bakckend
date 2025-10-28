@@ -1,14 +1,26 @@
 const nodemailer = require("nodemailer");
 require("dotenv").config();
 
+// const transporter = nodemailer.createTransport({
+//   service: "gmail",
+//   auth: {
+//     user: process.env.EMAIL,
+//     pass: process.env.EMAIL_PASSWORD,
+//   },
+// });
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false, // Use STARTTLS
+  requireTLS: true,
   auth: {
     user: process.env.EMAIL,
-    pass: process.env.EMAIL_PASSWORD,
+    pass: process.env.EMAIL_PASSWORD, // Use App Password, not regular password
   },
+  connectionTimeout: 10000, // 10 seconds
+  greetingTimeout: 5000,
+  socketTimeout: 10000,
 });
-
 
 
 //  User Cancellation Request Confirmation
@@ -38,7 +50,7 @@ exports.sendCancellationRequestUserEmail = async (email, booking, reason) => {
   };
 
   // await transporter.sendMail(mailOptions);
-   await new Promise((resolve, reject) => {
+  await new Promise((resolve, reject) => {
     transporter.sendMail(mailOptions, (err, info) => {
       if (err) {
         reject(err);
@@ -51,12 +63,19 @@ exports.sendCancellationRequestUserEmail = async (email, booking, reason) => {
 
 //  Admin  Cancellation Alert
 exports.sendCancellationRequestAdminEmail = async (booking, reason) => {
+  transporter.verify((error, success) => {
+    if (error) {
+      console.error('SMTP Connection Failed:', error);
+    } else {
+      console.log('SMTP Server is ready');
+    }
+  });
   const formatDate = (date) =>
     date ? new Date(date).toLocaleDateString("en-IN", { dateStyle: "medium" }) : "N/A";
 
   const mailOptions = {
     from: `"Samsara Adventures" <${process.env.EMAIL}>`,
-    to: process.env.ADMIN_EMAIL, 
+    to: process.env.ADMIN_EMAIL,
     subject: `⚠️ Cancellation Request – ${booking.title || "Booking"}`,
     html: `
       <div style="font-family: Arial, sans-serif; color: #333; padding: 16px;">
@@ -76,7 +95,7 @@ exports.sendCancellationRequestAdminEmail = async (booking, reason) => {
   };
 
   // await transporter.sendMail(mailOptions);
-   await new Promise((resolve, reject) => {
+  await new Promise((resolve, reject) => {
     transporter.sendMail(mailOptions, (err, info) => {
       if (err) {
         reject(err);
@@ -150,11 +169,10 @@ exports.sendCustomItineraryEmail = async (email, enquiry) => {
         <p>Hi ${enquiry.name || "Traveler"},</p>
         <p>We’re excited to share your personalized travel plan for <strong>${enquiry.title}</strong>.</p>
         
-        ${
-          enquiry.image
-            ? `<img src="${enquiry.image}" alt="Trip Image" style="max-width:100%; border-radius:8px; margin:16px 0;" />`
-            : ""
-        }
+        ${enquiry.image
+        ? `<img src="${enquiry.image}" alt="Trip Image" style="max-width:100%; border-radius:8px; margin:16px 0;" />`
+        : ""
+      }
 
         <h3>📌 Trip Information</h3>
         <ul style="list-style:none; padding:0; margin:0;">
@@ -169,22 +187,22 @@ exports.sendCustomItineraryEmail = async (email, enquiry) => {
         <h3 style="margin-top:20px;">🌍 Overview</h3>
         <ul>
           ${(itinerary.overview || [])
-            .map((item) => `<li>${item}</li>`)
-            .join("")}
+        .map((item) => `<li>${item}</li>`)
+        .join("")}
         </ul>
 
         <h3 style="margin-top:20px;">✅ Inclusions</h3>
         <ul>
           ${(itinerary.inclusions || [])
-            .map((item) => `<li>${item}</li>`)
-            .join("")}
+        .map((item) => `<li>${item}</li>`)
+        .join("")}
         </ul>
 
         <h3 style="margin-top:20px;">❌ Exclusions</h3>
         <ul>
           ${(itinerary.exclusions || [])
-            .map((item) => `<li>${item}</li>`)
-            .join("")}
+        .map((item) => `<li>${item}</li>`)
+        .join("")}
         </ul>
 
         <h3 style="margin-top:20px;">🎯 Activities</h3>
@@ -192,8 +210,8 @@ exports.sendCustomItineraryEmail = async (email, enquiry) => {
 
         <h3 style="margin-top:20px;">🗓️ Day-wise Itinerary</h3>
         ${(itinerary.itinerary || [])
-          .map(
-            (day) => `
+        .map(
+          (day) => `
             <div style="margin-bottom:12px; padding:10px; border-left:3px solid #007BFF; background:#f9f9f9; border-radius:6px;">
               <strong>Day ${day.dayNumber}: ${day.title}</strong><br/>
               <em>${day.description}</em>
@@ -202,8 +220,8 @@ exports.sendCustomItineraryEmail = async (email, enquiry) => {
               </ul>
             </div>
           `
-          )
-          .join("")}
+        )
+        .join("")}
 
         <h3 style="margin-top:20px;">💳 Payment Summary</h3>
         <ul style="list-style:none;padding:0;">
@@ -254,33 +272,29 @@ exports.sendCancellationApprovalEmail = async (email, booking) => {
         </ul>
 
         <h3 style="margin-top:20px;">💳 Refund Information</h3>
-        ${
-          payment.refundStatus === "NOT_APPLICABLE"
-            ? `<p>No refund is applicable for this booking as per the cancellation policy.</p>`
-            : `
+        ${payment.refundStatus === "NOT_APPLICABLE"
+        ? `<p>No refund is applicable for this booking as per the cancellation policy.</p>`
+        : `
               <ul style="list-style:none; padding:0;">
                 <li><strong>Refund Amount:</strong> ₹${payment.refundAmount || 0}</li>
                 <li><strong>Refund Percentage:</strong> ${payment.refundPercentage || 0}%</li>
-                <li><strong>Status:</strong> ${
-                  payment.refundStatus === "PROCESSED"
-                    ? "<span style='color:green;font-weight:bold;'>Processed</span>"
-                    : payment.refundStatus === "FAILED"
-                    ? "<span style='color:red;font-weight:bold;'>Failed</span>"
-                    : payment.refundStatus
-                }</li>
-                ${
-                  payment.refundId
-                    ? `<li><strong>Refund ID:</strong> ${payment.refundId}</li>`
-                    : ""
-                }
-                ${
-                  payment.refundProcessedAt
-                    ? `<li><strong>Processed At:</strong> ${formatDate(payment.refundProcessedAt)}</li>`
-                    : ""
-                }
+                <li><strong>Status:</strong> ${payment.refundStatus === "PROCESSED"
+          ? "<span style='color:green;font-weight:bold;'>Processed</span>"
+          : payment.refundStatus === "FAILED"
+            ? "<span style='color:red;font-weight:bold;'>Failed</span>"
+            : payment.refundStatus
+        }</li>
+                ${payment.refundId
+          ? `<li><strong>Refund ID:</strong> ${payment.refundId}</li>`
+          : ""
+        }
+                ${payment.refundProcessedAt
+          ? `<li><strong>Processed At:</strong> ${formatDate(payment.refundProcessedAt)}</li>`
+          : ""
+        }
               </ul>
             `
-        }
+      }
 
         <p style="margin-top:20px;">If you have any questions, feel free to contact our support team.</p>
         
