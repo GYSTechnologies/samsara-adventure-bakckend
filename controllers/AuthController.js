@@ -1048,27 +1048,30 @@ const resetOtp = async (req, res) => {
     const { email } = req.query;
     if (!email) return res.status(400).json({ message: "Email query param required" });
 
-    // Check if there is signup OTP record present (optional check)
-    // We'll allow resend only if user hasn't created an account yet
     const existUser = await UserModel.findOne({ email });
     if (existUser) return res.status(400).json({ message: "User already exists." });
 
-    // generate new OTP and upsert in DB
+    // find the previous signup OTP entry to get stored userPayload
+    const prevOtp = await OtpModel.findOne({ email, purpose: "signup" });
+
+    if (!prevOtp || !prevOtp.userPayload) {
+      return res.status(400).json({ message: "No pending signup found for this email" });
+    }
+
     const otp = crypto.randomInt(10 ** (OTP_LENGTH - 1), 10 ** OTP_LENGTH - 1);
 
-    // delete any existing signup OTPs and create new
     await OtpModel.deleteMany({ email, purpose: "signup" });
     await OtpModel.create({
       email,
       otp,
       purpose: "signup",
-      userPayload: null, // We expect the signup flow to have stored userPayload before, but if not, resend still sends OTP
+      userPayload: prevOtp.userPayload, // ✅ keep the same payload!
     });
 
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
         <h2 style="color: #2196F3; text-align: center;">New OTP Requested</h2>
-        <p>Dear User,</p>
+        <p>Dear ${prevOtp.userPayload.name},</p>
         <p>Please use the following One-Time Password (OTP) to verify your email address:</p>
         <div style="text-align: center; margin: 20px 0;">
             <span style="display: inline-block; font-size: 24px; letter-spacing: 3px; background: #f4f4f4; padding: 10px 20px; border-radius: 5px; font-weight: bold;">
@@ -1081,15 +1084,14 @@ const resetOtp = async (req, res) => {
 
     const sendResult = await sendMail({
       to: email,
-      subject: "🔐 Reset OTP - Email Verification",
+      subject: "🔐 New OTP - Email Verification",
       html,
       text: `Your OTP is ${otp}. It expires in 5 minutes.`,
     });
 
     if (!sendResult.ok) {
-      // cleanup
       await OtpModel.deleteMany({ email, purpose: "signup" });
-      return res.status(500).json({ message: "Error while resending OTP", error: sendResult.error?.message || sendResult.error });
+      return res.status(500).json({ message: "Error while resending OTP" });
     }
 
     return res.status(200).json({ message: "A new OTP has been sent to your email." });
