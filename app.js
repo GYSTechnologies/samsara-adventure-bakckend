@@ -18,11 +18,11 @@ app.use(express.urlencoded({ extended: true }));
 // Example for Express
 app.use(
   cors({
-      origin: '*',
-    // origin: process.env.CLIENT_URL,
+    origin: '*',
     credentials: true,
   })
 );
+
 
 const authRoute = require("./routes/AuthRoute");
 const bookRoute = require("./routes/BookingRoute");
