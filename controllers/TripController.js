@@ -578,6 +578,7 @@ const updateTrip = async (req, res) => {
     } = req.body;
 
     // Parse arrays sent as strings
+    const categoryArray = category ? JSON.parse(category) : existingTrip.category;
     const overviewArray = overview
       ? JSON.parse(overview)
       : existingTrip.overview;
@@ -636,7 +637,7 @@ const updateTrip = async (req, res) => {
       title: title || existingTrip.title,
       state: state || existingTrip.state,
       description: description || existingTrip.description,
-      category: category || existingTrip.category,
+      category: categoryArray,
       isSessional:
         isSessional !== undefined ? isSessional : existingTrip.isSessional,
       overview: overviewArray,
