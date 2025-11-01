@@ -20,7 +20,7 @@ app.use(
     credentials: true,
   })
 );
-
+ 
 // ROUTES
 const authRoute = require("../routes/AuthRoute");
 const bookRoute = require("../routes/BookingRoute");
